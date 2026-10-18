@@ -10,6 +10,12 @@ The same `Neo4jMemory` (`exercises/neo4j_memory.py`) exposed three ways:
 
 ## Setup
 
+`venv/` is not in the repository. Create it first (from the workshop root):
+
+```bash
+python3 -m venv venv && venv/bin/pip install -r requirements.txt
+```
+
 ```bash
 # MCP (recommended), project scope, writes .mcp.json
 claude mcp add graph-memory -s project -- venv/bin/python claude_memory/mcp_server.py
@@ -120,6 +126,14 @@ Second approach, next to the `Neo4jMemory` tools above: the Neo4j Labs plugin
 into Neo4j through hooks, and `import_claude_history.py` loads the history that existed before the plugin.
 Imported sessions get the same graph shape as live ones, because the importer calls MKG's own hook code.
 
+| File | Purpose |
+|------|---------|
+| `import_claude_history.py` | `scan` / `sanitize` / `load` / `enrich` the Claude Code history into MKG's graph |
+| `ask_memory.py` | runs `cypher/questions.cypher`, writes `results/memory_questions.md` and screenshots (local only) |
+| `backfill_embeddings.py` | embeds `:Learning` / `:Observation` nodes written without an embedding |
+| `mcp_probe.py` | calls the MKG MCP server over stdio, without restarting Claude Code |
+| `cypher/*.cypher` | read-only model, result and question queries |
+
 ## Status (2026-10-18)
 
 | Step | Status |
@@ -138,6 +152,8 @@ Imported sessions get the same graph shape as live ones, because the importer ca
 | LLM extraction of learnings / observations (Azure OpenAI `gpt-5-mini`) | Done 2026-10-18: all 19 sessions, see step 6 |
 | Embeddings for the learnings / observations written before the embedding deployment existed | Done 2026-10-18 with `backfill_embeddings.py` (8 learnings, 24 observations) |
 | Questions on learnings and the episodic timeline (Q11, Q12) | Done 2026-10-18 |
+| APOC 2026.09.0 + GDS 2026.09.0 active (`plugins/`, `dbms.security.procedures.unrestricted=apoc.*,gds.*`) | Done 2026-10-18; needed for `neo4j_get_schema` / `neo4j_read_cypher` |
+| MCP tools tested (see "MCP test") | Done 2026-10-18 |
 | Rotate the AI Studio key and the Google keys found in the TwoBreath history | Done 2026-10-18 (by you) |
 
 ## Steps, in order
@@ -278,13 +294,20 @@ Plain-word passwords (e.g. `password`) are not replaced globally, only where the
 (:Project)-[:HAS_OBSERVATION]->(:Observation)-[:NEXT]->(:Observation)
 ```
 
+Schema in Neo4j Browser after load + enrich (`CALL db.schema.visualization()`), and nodes per label. Both were
+taken before the LLM extraction, so `:Learning` and `:Observation` are not in them yet:
+
+![Schema of the imported history](image.png)
+
+![Nodes per label](image-1.png)
+
 `SessionEvent` properties used by the queries: `event_name` (`UserPromptSubmit`, `PreToolUse`, `PostToolUse`,
 `Stop`, ...), `timestamp` (original time from the transcript), `prompt`, `tool_name`, `tool_input`, `tool_response`,
 `tool_error`, `cwd`.
 
 ## Cypher scripts
 
-All read-only. Run them in Neo4j Browser (`http://127.0.0.1:7475`, or 7474 before the restart) or `cypher-shell`.
+All read-only. Run them in Neo4j Browser (`http://127.0.0.1:7475`), `cypher-shell`, or through `neo4j_read_cypher`.
 
 | File | Contents |
 |------|----------|
@@ -296,24 +319,96 @@ In Neo4j Browser, set a parameter first: `:param session_id => '152df933-603e-40
 
 ## Asking through the MCP server
 
-Once step 4 is done, every new Claude Code session has the MKG tools. Ask in plain language and name the tool,
-or let Claude choose:
+Every new Claude Code session has the MKG tools (prefix `mcp__meta-knowledge-graph__`). The server mounts only at
+session start, so start a new session after changing the credentials file or the Neo4j plugins. The three `neo4j_*`
+tools need APOC in the instance (see "Troubleshooting"). Ask in plain language and name the tool, or let Claude choose:
 
 | Tool | Use |
 |------|-----|
-| `mcp__meta-knowledge-graph__neo4j_get_schema` | labels, relationship types, properties (same as `model.cypher`) |
-| `mcp__meta-knowledge-graph__neo4j_read_cypher` | run any read-only Cypher, e.g. a block from `questions.cypher` |
-| `mcp__meta-knowledge-graph__project_get_context` | learnings for the current project (from step 6) |
-| `mcp__meta-knowledge-graph__episode_search` / `episode_fetch` | episodic timeline (from step 6) |
+| `neo4j_get_schema` | labels, relationship types, properties (same as `model.cypher`; about 15K characters) |
+| `neo4j_read_cypher` | any read-only Cypher, e.g. a block from `questions.cypher`; writes are rejected |
+| `neo4j_list-gds-procedures` | Graph Data Science procedures (about 24K characters) |
+| `project_get_context` | learnings for a project, ranked for a question, plus the 5 latest observations |
+| `episode_search` / `episode_fetch` | find observations by topic / read one with facts, neighbours and produced learnings |
+| `project_gate_audit` | what the autonomous gate blocked, and why |
+| `skill_search` / `skill_fetch` / `skill_review_queue` | compiled skills (none yet) |
+| `project_add_learning` / `project_resolve_learning` / `project_resolve_skill` | write a learning, override the gate |
+
+Pass `project_id` (`haystack-workshop`, `claude-memory`, `projects`, `twobreath-app`); without it the server uses the
+project of the current directory, and facts are often stored under another one (see "MCP test", problem 2).
 
 Example prompts:
 
 - "Use neo4j_read_cypher to run Q5 from claude_memory/cypher/questions.cypher and explain how each Neo4j error was fixed."
 - "Which Neo4j errors did I hit in the TwoBreath project? Query the memory graph."
 - "Trace why the workshop uses bolt://127.0.0.1:7687: show the prompt, the tool calls and the result that led to it."
+- "Use project_get_context for haystack-workshop: how accurate was GraphRAG compared to vector RAG?"
+- "Search the episodes of claude-memory for the Neo4j port change and fetch the full episode."
 
 Claude Desktop or other MCP clients register the same server with
 `uv --directory ~/.claude/plugins/marketplaces/mkg run meta-knowledge-graph`.
+
+## MCP test (2026-10-18)
+
+All 13 tools of the MKG MCP server, called over stdio with `mcp_probe.py` (same transport as Claude Code; this
+Claude Code session could not mount the server because it started before the credentials file existed).
+
+```bash
+uv run --no-project --with mcp python claude_memory/mcp_probe.py list
+```
+
+### What works
+
+| Tool | Test | Result |
+|------|------|--------|
+| `neo4j_read_cypher` | Q1, Q4, Q5, Q10, Q11 from `questions.cypher`, a query with `$params` | Same rows as `ask_memory.py` |
+| `neo4j_read_cypher` | `CREATE (:McpWriteProbe ...)` | Rejected (`isError=True`): read-only is enforced |
+| `neo4j_read_cypher` | Broken Cypher | `isError=True` with the Neo4j syntax error |
+| `neo4j_get_schema` | | 56 labels / relationship types, all MKG labels, no workshop data |
+| `project_get_context` | "How accurate is GraphRAG compared to vector RAG?" (haystack-workshop) | Correct top hit (100 % vs vector RAG, 22 questions) |
+| `project_get_context` | a security question in another project (twobreath-app) | Correct top hit |
+| `episode_search` | "GraphRAG evaluation accuracy" | 4 of 5 hits relevant |
+| `episode_fetch` | by id; latest page; unknown id | Facts, narrative, prev/next, produced learnings; clear error for the unknown id |
+| `project_gate_audit` | claude-memory, haystack-workshop | Blocked learnings with reasons |
+| `skill_search`, `skill_review_queue` | | Empty: no skills compiled yet (needs 4+ learnings with one `task_pattern`) |
+
+Not called: `project_add_learning`, `project_resolve_learning`, `project_resolve_skill`, `skill_fetch` (they write,
+or need a skill that does not exist yet).
+
+### Problems found
+
+1. **The Cypher tools were missing.** MKG proxies the official `neo4j-mcp-server`, which exits with
+   `please ensure the APOC plugin is installed and includes the 'meta' component`. The server then lists only its
+   10 memory tools; the reason appears only in its stderr. APOC and GDS were bundled in the instance (`labs/`,
+   `products/`) but not in `plugins/`. Fixed by copying both jars to `plugins/`, allowing `apoc.*,gds.*`, restart.
+2. **Facts land in the wrong project.** The workshop's Neo4j port (7689) was learned in sessions started in
+   `claude_memory/` or `~/projects`, so it sits under the projects `claude-memory` and `projects`. Asking
+   `project_get_context` in `haystack-workshop` "Which Neo4j port does the workshop use?" returns nothing about the
+   port; the top hit is unrelated. Without `project_id` the server uses the cwd project.
+3. **No "no match" signal.** "kubernetes helm chart deployment" still returns 5 learnings. Scores are reciprocal-rank
+   fusion values (0.015-0.033) and look the same for hits and misses, so the agent has to judge relevance itself.
+4. **`recent_observations` ignore the query.** `project_get_context` returns the same 5 latest observations for
+   every question.
+5. **Imported history is summarized coarsely.** One extraction batch per imported session gives 2-3 observations.
+   The 2026-10-17 `AuthError` and its fix are not in any learning or observation, so `episode_search` does not find
+   them; only `neo4j_read_cypher` over the raw events (Q4, Q5) does.
+6. **Memory about memory.** Sessions that test MKG create observations such as "Many user questions had no
+   supporting evidence" or "Progress state recorded as 17/18"; they rank high in searches and crowd out project facts.
+7. **Unvetted results by default.** `project_get_context` returns `approved` and `candidate`; 15 of 34 learnings are
+   still `candidate` (most from the import).
+8. **The gate blocks facts phrased as steps.** "Project is not configured to use Gemini ... To enable Gemini:
+   create an API key ..." was blocked as `injection`. The fact part is lost with the instructions.
+9. **Error signalling differs.** MKG's own tools return errors as normal results (`isError=False`,
+   `{"status": "error"}`); the proxied Neo4j tools set `isError=True`.
+10. **Naming and size.** The GDS tool keeps the name `neo4j_list-gds-procedures` (not renamed like the others).
+    `neo4j_get_schema` returns 15.6K characters and the GDS list 24K, a lot of context for one call.
+11. **Telemetry.** `neo4j-mcp-server` sends anonymous usage telemetry by default. MKG sets its environment in code,
+    so `NEO4J_TELEMETRY=false` cannot be passed without editing the plugin.
+12. **Live sessions change the raw-trace answers.** Once the hooks log live sessions, Q4 / Q5 picked up escaped JSON
+    (`SyntaxError\`) and empty error names; both queries now strip backslashes and skip rows without an error name.
+
+To use the tools inside Claude Code, start a new session (the MCP server mounts only at session start) and check
+that `mcp__meta-knowledge-graph__neo4j_read_cypher` is listed.
 
 ## Twelve questions about Neo4j projects and challenges
 
@@ -346,6 +441,10 @@ Fixes after the first run:
 - **Q4 / Q5** error names kept a trailing `}` and missed exceptions after a line break. Tool output cut in the middle
   of a status code (`Neo.ClientError.Security....`) now falls back to the exception class.
 - **Q8** listed tool responses, directories and shell fragments (`2>/dev/null`) as files; it now keeps file names only.
+- **Q4 / Q5 with live sessions.** Once the hooks log live sessions, escaped JSON left `SyntaxError\` and cut-off codes
+  left empty error names. Both queries now strip backslashes and skip rows without an error name.
+- **Q12** only matched "neo4j" in titles, which missed the imported GraphRAG work; it now also searches narrative and
+  facts for `neo4j|graphrag|cypher|knowledge graph|bolt://`.
 
 _Screenshots and `results/` are generated locally by `ask_memory.py` and are not published: they contain personal session history._
 
@@ -358,6 +457,18 @@ and Neo4j rejects them. After a few rejected logins in a row Neo4j locks the `ne
 correct credentials (the importer, `ask_memory.py`, the workshop) fail with `AuthenticationRateLimit` while a Claude
 Code session is active. Fix: create the file (step 4), then start a new session. Until then, retry after a pause.
 Fixed on 2026-10-18.
+
+**`neo4j_get_schema` / `neo4j_read_cypher` are missing; the server lists only 10 tools.** The proxied
+`neo4j-mcp-server` exits with `please ensure the APOC plugin is installed and includes the 'meta' component`
+(visible only in the server's stderr: `ERRLOG=err.log ... mcp_probe.py list`). Neo4j Desktop ships APOC and GDS in the
+instance's `labs/` and `products/`, but they load only from `plugins/`:
+
+```bash
+D="$HOME/Library/Application Support/neo4j-desktop/Application/Data/dbmss/dbms-329920e9-dda8-4f8f-9a55-10bbb1386859"
+cp "$D/labs/apoc-2026.09.0-core.jar" "$D/products/neo4j-graph-data-science-2026.09.0.jar" "$D/plugins/"
+echo 'dbms.security.procedures.unrestricted=apoc.*,gds.*' >> "$D/conf/neo4j.conf"
+# restart the instance (step 2), then check: RETURN apoc.version(), gds.version()
+```
 
 **`402 Your prepayment credits are depleted`** from Gemini: the AI Studio project has no credits. The credentials file
 uses Azure OpenAI instead (step 4).

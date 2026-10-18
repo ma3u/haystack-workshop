@@ -42,11 +42,12 @@ MATCH (s:Session)-[:FIRST_EVENT]->(f:SessionEvent)
 MATCH (p:Project {repo_root: split(f.cwd, '/.claude/worktrees/')[0]})
 MATCH (s)-[:HAS_EVENT]->(e:SessionEvent {event_name: 'PostToolUse'})
 WHERE e.tool_response =~ '(?s).*(Neo\\.(ClientError|DatabaseError|TransientError)\\.[A-Za-z.]+|neo4j\\.exceptions\\.[A-Za-z]+).*'
-WITH p, e, [x IN split(reduce(r = e.tool_response, c IN ['{', '}', ':', '"', ',', '\n', '\\n'] | replace(r, c, ' ')), ' ')
+WITH p, e, [x IN split(reduce(r = e.tool_response, c IN ['\\n', '\\', '{', '}', ':', '"', ',', '\n'] | replace(r, c, ' ')), ' ')
             WHERE NOT x CONTAINS '..'] AS words
 // Prefer the full status code (Neo.ClientError...); tool output cut mid-code falls back to the exception class
 WITH p, e, coalesce([x IN words WHERE x STARTS WITH 'Neo.'][0],
                     [x IN words WHERE x STARTS WITH 'neo4j.exceptions.'][0]) AS error
+WHERE error IS NOT NULL  // a code cut off before its last segment leaves nothing usable
 RETURN error, collect(DISTINCT p.name) AS projects, count(*) AS times,
        toString(date(min(e.timestamp))) AS first_seen
 ORDER BY times DESC LIMIT 10;
@@ -61,11 +62,12 @@ WITH bad, fix, length(path) AS steps ORDER BY steps
 WITH bad, head(collect({fix: fix, steps: steps})) AS first
 MATCH (pre:SessionEvent {event_name: 'PreToolUse', tool_use_id: first.fix.tool_use_id})
 WITH bad, first, pre,
-     [x IN split(reduce(r = bad.tool_response, c IN ['{', '}', ':', '"', ',', '\n', '\\n'] | replace(r, c, ' ')), ' ')
+     [x IN split(reduce(r = bad.tool_response, c IN ['\\n', '\\', '{', '}', ':', '"', ',', '\n'] | replace(r, c, ' ')), ' ')
       WHERE NOT x CONTAINS '..'] AS words
-RETURN toString(date(bad.timestamp)) AS day,
-       coalesce([x IN words WHERE x STARTS WITH 'Neo.'][0],
-                [x IN words WHERE x STARTS WITH 'neo4j.exceptions.' OR x = 'AuthError'][0]) AS error,
+WITH bad, first, pre, coalesce([x IN words WHERE x STARTS WITH 'Neo.'][0],
+                               [x IN words WHERE x STARTS WITH 'neo4j.exceptions.' OR x = 'AuthError'][0]) AS error
+WHERE error IS NOT NULL
+RETURN toString(date(bad.timestamp)) AS day, error,
        first.steps AS events_until_fix,
        left(replace(pre.tool_input, '\\n', ' '), 110) AS fixing_call
 ORDER BY day LIMIT 10;
