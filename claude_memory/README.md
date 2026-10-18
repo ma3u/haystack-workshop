@@ -134,6 +134,8 @@ Imported sessions get the same graph shape as live ones, because the importer ca
 | `mcp_probe.py` | calls the MKG MCP server over stdio, without restarting Claude Code |
 | `recall_all.py` | recall over every project with a cosine score, a "no match" answer and the next episode on the timeline; `--hook` injects it into every prompt |
 | `memory_eval.py` | 10 questions to the memory, each checked against the real source, MCP vs `recall_all.py` |
+| `prompt_audit.py` | audit: every prompt in the raw transcripts vs the `UserPromptSubmit` events in the graph, per session |
+| `scrub_secrets.py` | redacts secrets the live hooks wrote into the graph, with the importer's rules; dry run by default |
 | `cypher/*.cypher` | read-only model, result and question queries |
 
 ## Status (2026-10-18)
@@ -158,6 +160,7 @@ Imported sessions get the same graph shape as live ones, because the importer ca
 | MCP tools tested (see "MCP test") | Done 2026-10-18 |
 | Memory recall tested against the real sources, gaps fixed (see "Memory recall test") | Done 2026-10-18 |
 | Rotate the AI Studio key and the Google keys found in the TwoBreath history | Done 2026-10-18 (by you) |
+| Audit: all prompts of the project in the graph, noise separated, secrets scrubbed (see "Audit") | Done 2026-10-18: 51 of 51 prompts |
 
 ## Steps, in order
 
@@ -316,7 +319,7 @@ All read-only. Run them in Neo4j Browser (`http://127.0.0.1:7475`), `cypher-shel
 |------|----------|
 | `cypher/model.cypher` | M1 schema visualization, M2 nodes per label, M3 relationship counts `(from)-[type]->(to)`, M4 properties per label, M5 indexes |
 | `cypher/results.cypher` | R1 overview per project, R2 one session as an ordered event chain (`$session_id`), R3 tool usage and failures, R4 subagents, R5 provenance prompt → tool call → result → files (`$text`), R6 redaction check |
-| `cypher/questions.cypher` | the twelve questions below |
+| `cypher/questions.cypher` | the twelve questions below, plus Q13 (audit, see "Audit") |
 
 In Neo4j Browser, set a parameter first: `:param session_id => '152df933-603e-402c-8857-7316452bf7e5'`.
 
@@ -564,6 +567,7 @@ Ten questions on the raw trace plus two on the LLM-extracted memory, defined in 
 | Q10 | Why does the workshop use `bolt://127.0.0.1:7687`? Trace prompt → tool calls → decision. |
 | Q11 | What did the memory learn per project, and what did the gate approve or block? |
 | Q12 | Episodic timeline: what happened with Neo4j / GraphRAG, in order? |
+| Q13 | Audit: which prompts did I type per session? (see "Audit") |
 
 Fixes after the first run:
 
@@ -581,6 +585,78 @@ Fixes after the first run:
   facts for `neo4j|graphrag|cypher|knowledge graph|bolt://`.
 
 _Screenshots and `results/` are generated locally by `ask_memory.py` and are not published: they contain personal session history._
+
+## Audit (2026-10-18)
+
+Question: does the graph hold every prompt of this project's sessions, and nothing it should not? Ground truth is
+the raw transcripts in `~/.claude/projects/-Users-ma3u-projects-haystack-workshop/*.jsonl` (11 sessions at the time).
+
+**First run: 43 of 51 prompts in the graph.** Three causes:
+
+| Gap | Cause | Fix |
+|-----|-------|-----|
+| 6 prompts, 2026-10-18 12:30-16:00Z (tail of `152df933`, start of `8d6ff9e1`) | Nothing logged them: the import had run at 12:30, and the hooks had no credentials file before 16:00 | Back-filled with `load --session ... --since/--until` (below) |
+| 3 queued prompts in `152df933` ("stored", "[Image #1] use this", "document the difference...") | A prompt typed while the agent works is queued. When it is consumed mid-turn, the transcript has only a `type=attachment, attachment.type=queued_command` record, no `type=user` record, and the importer dropped it | The importer keeps `queued_command` records with `commandMode=prompt` (not `task-notification`), without a `Stop` before them. The live hooks already log queued prompts |
+| 19 `UserPromptSubmit` events that are no prompts | Claude Code delivers `<task-notification>`, `<bash-input>` and similar through the prompt hook | Not removed (MKG's data); Q13 and `prompt_audit.py` classify them as noise |
+
+**Back-fill.** MKG's event id is a hash of the hook payload, so loading an imported event twice is a no-op. A live
+event and the importer's replay of the same moment have different payloads, though, so a session the hooks also
+logged must be loaded only for the window they missed. `load` now takes `--session`, `--since`, `--until` and
+`--dry-run` (lists what it would add, computed with MKG's own event-id function), and re-chains every session it
+changed: `log_event` appends at `LATEST_EVENT`, so back-filled events would otherwise sit after newer ones.
+
+```bash
+RUN="uv run --no-project --with neo4j python claude_memory/import_claude_history.py"
+$RUN sanitize                                                    # gitleaks 0, known .env values 0
+$RUN load --uri bolt://127.0.0.1:7689 --session 152df933 --dry-run   # 65 new / 355 already in graph (+30 subagent)
+$RUN load --uri bolt://127.0.0.1:7689 --session 152df933
+$RUN load --uri bolt://127.0.0.1:7689 --session 8d6ff9e1 --until 2026-10-18T16:00:20.5Z   # 101 new; live from 16:00:20
+$RUN enrich --uri bolt://127.0.0.1:7689 --session 152df933
+$RUN enrich --uri bolt://127.0.0.1:7689 --session 8d6ff9e1
+```
+
+Afterwards each session's `FIRST_EVENT -[:NEXT*]-> LATEST_EVENT` chain covers all its events (422 and 328).
+
+**Re-run: 51 of 51.**
+
+```bash
+uv run --script claude_memory/prompt_audit.py --exclude 24ebda85 --show-missing   # leave out the audit session itself
+```
+
+```text
+11 sessions: 51 prompts in the transcripts (43 developer, 8 machine-written), 51 in the graph, 0 missing.
+Noise not counted: 16 in the transcripts, 19 stored as prompts.
+```
+
+Machine-written prompts are the 6 headless `claude -p` test runs and the 2 briefs a session gave to a session it
+started ("Task/Background (from the session that started this one)"). Q13 lists the same per session from the graph
+alone. It also lists two older sessions (`4b9448cf`, `6994459c`) that started in `~/projects` and then worked in this
+repository; their transcripts are in another project directory.
+
+Left as found:
+
+- `152df933` keeps the `SessionEnd` the first import wrote at 12:30:13, now in the middle of its chain.
+- `8d6ff9e1` really started in `~/projects` (first cwd), so the per-project questions (Q1-Q4, Q6, Q9) count it for the `Projects` home project.
+
+**Secrets in live events.** Only the importer redacts. MKG's `hooks/log_event.py` stores prompts, tool inputs and
+tool responses raw. Rather than patch the plugin (an update would overwrite it), `scrub_secrets.py` applies the
+importer's rules (every secret value from `~/projects/**/.env*`, plus `SECRET_PATTERNS`) to `:SessionEvent`
+`prompt`, `tool_input`, `tool_response`, `tool_error`, `last_assistant_message`, `transcript`, `:Learning.text`
+and `:Observation` `title` / `narrative` / `facts`. It is a dry run unless `--apply` is given, and it prints only
+the rule and the redacted context, never a value. For text already in the graph it adds three guards: existing
+`[REDACTED:x]` markers are kept (a second run finds nothing), a URL match across an escaped `\n` is skipped, and an
+`assignment` value ends at a backslash and is skipped when it is masked or code (`****`, `key['x']`, `{...}`).
+
+```bash
+uv run --script claude_memory/scrub_secrets.py                       # dry run, whole graph
+uv run --script claude_memory/scrub_secrets.py --since 2026-10-18 --apply
+```
+
+Result on 2026-10-18: no secrets in 3,977 events, 50 learnings and 135 observations. Without the guards the importer's
+rules reported 111 hits, all false positives: code, masked values, a gitleaks line reference, JSON-escaped text,
+and the script's own earlier output. No `--apply` was run. To run it regularly without changing the plugin, add it as
+a `SessionEnd` hook in `~/.claude/settings.json` or as a launchd job, with `--since` set to the last day. Not set up
+yet. Redaction after the fact still leaves a window in which the raw text is in Neo4j, so keep the instance local.
 
 ## Troubleshooting
 

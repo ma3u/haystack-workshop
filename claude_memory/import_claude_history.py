@@ -21,6 +21,11 @@ Usage (only needs the neo4j driver; gitleaks on PATH):
   $RUN sanitize
   $RUN load   --uri bolt://127.0.0.1:7689
   $RUN enrich --uri bolt://127.0.0.1:7689
+
+Back-filling a window the live hooks did not log (a session that MKG also logged live): pick the window and the
+session, so the live-logged part is not imported a second time, and check with --dry-run first. load computes
+MKG's event ids (payload hashes) and skips events already in the graph, then re-chains the sessions it changed:
+  $RUN load --uri bolt://127.0.0.1:7689 --session 8d6ff9e1 --until 2026-10-18T16:00:20Z --dry-run
 """
 import argparse
 import datetime as dt
@@ -38,6 +43,7 @@ STAGE = HOME / ".mkg-import"
 CLEAN = STAGE / "clean"
 MKG_HOOKS = HOME / ".claude" / "plugins" / "marketplaces" / "mkg" / "hooks"
 WORKSHOP_ENV = Path(__file__).resolve().parents[1] / ".env"
+MKG_ENV = HOME / ".config" / "meta-knowledge-graph" / ".env"
 
 MAX_TOOL_RESULT = 4000  # same cap MKG applies to live tool responses
 MAX_TOOL_INPUT = 4000
@@ -149,6 +155,20 @@ def iter_events(path: Path, stats: Counter, known: dict[str, str]):
         except json.JSONDecodeError:
             continue
         rtype = rec.get("type")
+        att = rec.get("attachment") or {}
+        if rtype == "attachment" and att.get("type") == "queued_command" and att.get("commandMode") == "prompt":
+            # A prompt typed while the agent was still working: Claude Code queues it and, when it is consumed
+            # mid-turn, writes it only as this attachment (no type=user record). Background task notifications
+            # use the same mechanism with commandMode=task-notification; those are not prompts and stay dropped.
+            raw = att.get("prompt")
+            if isinstance(raw, list):
+                raw = "\n".join(x.get("text", "") for x in raw if isinstance(x, dict) and x.get("type") == "text")
+            text = clean_text(raw or "")
+            if text:
+                yield {"ts": rec.get("timestamp"), "cwd": rec.get("cwd"), "session_id": rec.get("sessionId"),
+                       "agent_id": None, "kind": "prompt", "queued": True, "text": redact(text, known, stats)}
+                stats["kept:queued_prompt"] += 1
+            continue
         if rtype not in ("user", "assistant") or rec.get("isMeta") or rec.get("isCompactSummary") or rec.get("isApiErrorMessage"):
             stats[f"drop:{rtype}"] += 1
             continue
@@ -215,15 +235,18 @@ def cmd_sanitize(args) -> None:
 
 
 def connect_env(uri: str) -> None:
-    """MKG reads NEO4J_* / MKG_USER_ID from the environment. Password comes from the workshop .env."""
-    env = dict(re.findall(r"^([A-Z0-9_]+)=(.*)$", WORKSHOP_ENV.read_text(), re.M))
+    """MKG reads NEO4J_* / MKG_USER_ID from the environment. Credentials and user id come from MKG's own config
+    (~/.config/meta-knowledge-graph/.env, the file the live hooks read), else from the workshop .env."""
+    src = MKG_ENV if MKG_ENV.is_file() else WORKSHOP_ENV
+    env = {k: v.strip().strip("\"'") for k, v in re.findall(r"^([A-Z0-9_]+)=(.*)$", src.read_text(), re.M)}
     os.environ.update(
         NEO4J_URI=uri,
-        NEO4J_USERNAME=env.get("NEO4J_USERNAME", "neo4j").strip(),
-        NEO4J_PASSWORD=env["NEO4J_PASSWORD"].strip(),
+        NEO4J_USERNAME=env.get("NEO4J_USERNAME", "neo4j"),
+        NEO4J_PASSWORD=env["NEO4J_PASSWORD"],
         NEO4J_DATABASE="neo4j",
     )
-    os.environ.setdefault("MKG_USER_ID", os.environ.get("USER", "local-user"))
+    # Same user id as the live hooks, so imported and live events of one session belong to one :User
+    os.environ.setdefault("MKG_USER_ID", env.get("MKG_USER_ID") or os.environ.get("USER", "local-user"))
     from neo4j import GraphDatabase
 
     with GraphDatabase.driver(uri, auth=(os.environ["NEO4J_USERNAME"], os.environ["NEO4J_PASSWORD"])) as d:
@@ -249,7 +272,9 @@ def hook_payloads(path: Path, parent_session: str):
     for e in events:
         base = {**common, "cwd": e.get("cwd") or cwd}
         if e["kind"] == "prompt":
-            if last_text is not None:
+            # A queued prompt arrives mid-turn: the turn has not stopped, so no Stop event before it. This also
+            # keeps every other payload (and so its event id) identical to an import made without queued prompts.
+            if last_text is not None and not e.get("queued"):
                 yield e["ts"], {**base, "hook_event_name": "Stop", "last_assistant_message": last_text}
                 last_text = None
             yield e["ts"], {**base, "hook_event_name": "UserPromptSubmit", "prompt": e["text"]}
@@ -288,25 +313,103 @@ def cmd_load(args) -> None:
             return cls.current
 
     mkg.datetime = ReplayClock  # events keep their original timestamps
-    files = sorted(CLEAN.rglob("*.jsonl"))
+    from neo4j import GraphDatabase
+
+    driver = GraphDatabase.driver(args.uri, auth=(os.environ["NEO4J_USERNAME"], os.environ["NEO4J_PASSWORD"]))
+    since, until = (parse_ts(x) if x else None for x in (args.since, args.until))
+    files = [f for f in sorted(CLEAN.rglob("*.jsonl"))
+             if not args.session or any(p.startswith(args.session) for p in (f.stem, f.parts[-3]))]
     total = 0
+    touched = set()
     for f in files:
         parent = f.parents[1].name if f.parent.name == "subagents" else f.stem
-        n = 0
+        todo = []
         for ts, payload in hook_payloads(f, parent):
-            ReplayClock.current = dt.datetime.fromisoformat(ts.replace("Z", "+00:00"))
-            payload = {k: v for k, v in payload.items() if v is not None}
-            mkg.log_event(payload, client="claude_code")
-            n += 1
-        total += n
-        print(f"  {n:>5} events  {f.relative_to(CLEAN)}", flush=True)
-    print(f"loaded {total} events from {len(files)} transcripts into {args.uri}")
+            when = parse_ts(ts)
+            if (since and when < since) or (until and when >= until):
+                continue
+            todo.append((when, {k: v for k, v in payload.items() if v is not None}))
+        # Event ids are payload hashes (log_event): an event that is already in the graph is skipped by MKG itself.
+        # Computing the same ids here lets --dry-run say what a load would add, and lets load re-chain only the
+        # sessions it really changed.
+        ids = [event_id(mkg, p) for _, p in todo]
+        existing = {r["id"] for r in driver.execute_query(
+            "MATCH (e:SessionEvent) WHERE e.event_id IN $ids RETURN e.event_id AS id", ids=ids,
+            database_="neo4j").records}
+        new = [(when, p) for (when, p), i in zip(todo, ids) if i not in existing]
+        for when, p in new:
+            if args.dry_run:
+                text = p.get("prompt") or p.get("tool_name") or ""
+                print(f"    + {when.isoformat()[:19]} {p['hook_event_name']:<16} {text[:60]!r}")
+                continue
+            ReplayClock.current = when
+            mkg.log_event(p, client="claude_code")
+            touched.add(p.get("agent_id") or p["session_id"])
+        total += len(new)
+        print(f"  {len(new):>5} new / {len(todo) - len(new):>5} already in graph  {f.relative_to(CLEAN)}", flush=True)
+    verb = "would load" if args.dry_run else "loaded"
+    print(f"{verb} {total} events from {len(files)} transcripts into {args.uri}")
+    for sid in sorted(touched):
+        # log_event appends at LATEST_EVENT: events older than the session's last event land out of order
+        n = rechain(driver, sid)
+        print(f"  re-chained {sid}: {n} events in timestamp order")
+    driver.close()
+
+
+def parse_ts(ts: str) -> dt.datetime:
+    return dt.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+
+
+def event_id(mkg, payload: dict) -> str:
+    """The id log_event gives this payload (log_event.py: sha1 over the normalized payload)."""
+    import hashlib
+
+    data = mkg.normalize_tool_failure_payload(payload)
+    sig = hashlib.sha1(json.dumps(data, sort_keys=True, default=str).encode("utf-8")).hexdigest()[:16]
+    return f"claude_code:{data.get('session_id') or 'unknown'}:{data.get('hook_event_name') or 'unknown'}:{sig}"
+
+
+# Tie-break for events with the same timestamp: a replayed Stop shares its timestamp with the next prompt,
+# the final Stop with SessionEnd.
+EVENT_ORDER = {"SessionStart": 0, "Stop": 1, "SubagentStop": 1, "UserPromptSubmit": 2, "PreToolUse": 3,
+               "PostToolUse": 4, "SessionEnd": 9}
+
+
+def rechain(driver, session_id: str) -> int:
+    """Rebuild (:Session)-[:FIRST_EVENT|LATEST_EVENT]-> and (:SessionEvent)-[:NEXT]-> of one session in timestamp
+    order. Touches only these relationships between the session and its own events."""
+    records = driver.execute_query(
+        """
+        MATCH (s:Session {session_id: $sid})-[:HAS_EVENT]->(e:SessionEvent)
+        WITH s, e ORDER BY e.timestamp, coalesce($order[e.event_name], 5), e.event_id
+        WITH s, collect(e) AS events
+        CALL (s, events) {
+          OPTIONAL MATCH (s)-[r:FIRST_EVENT|LATEST_EVENT]->() DELETE r
+        }
+        CALL (events) {
+          UNWIND events AS e
+          OPTIONAL MATCH (e)-[n:NEXT]->(:SessionEvent)<-[:HAS_EVENT]-(:Session {session_id: $sid}) DELETE n
+        }
+        CALL (s, events) {
+          WITH s, events[0] AS first, events[-1] AS last
+          CREATE (s)-[:FIRST_EVENT]->(first), (s)-[:LATEST_EVENT]->(last)
+        }
+        CALL (events) {
+          UNWIND range(0, size(events) - 2) AS i
+          WITH events[i] AS a, events[i + 1] AS b
+          CREATE (a)-[:NEXT]->(b)
+        }
+        RETURN size(events) AS n
+        """, sid=session_id, order=EVENT_ORDER, database_="neo4j").records
+    return records[0]["n"] if records else 0
 
 
 def cmd_enrich(args) -> None:
     connect_env(args.uri)
     sessions = []
     for f in sorted(CLEAN.rglob("*.jsonl")):
+        if args.session and not any(p.startswith(args.session) for p in (f.stem, f.parts[-3])):
+            continue
         first = json.loads(f.open().readline())
         # cwd lets MKG resolve the same :Project the events were linked to (else it falls back to the plugin dir)
         sid = (first.get("agent_id") or f.stem) if f.parent.name == "subagents" else f.stem
@@ -327,6 +430,11 @@ def main() -> None:
     for name in ("load", "enrich"):
         x = sub.add_parser(name)
         x.add_argument("--uri", required=True, help="agent-memory instance, e.g. bolt://127.0.0.1:7689")
+        x.add_argument("--session", help="only this session (id prefix) and its subagents")
+        if name == "load":
+            x.add_argument("--since", help="only events at or after this ISO timestamp, e.g. 2026-10-18T12:30:00Z")
+            x.add_argument("--until", help="only events before this ISO timestamp")
+            x.add_argument("--dry-run", action="store_true", help="list the events a load would add, write nothing")
     args = p.parse_args()
     {"scan": cmd_scan, "sanitize": cmd_sanitize, "load": cmd_load, "enrich": cmd_enrich}[args.cmd](args)
 

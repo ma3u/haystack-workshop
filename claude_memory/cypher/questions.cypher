@@ -136,3 +136,32 @@ WHERE t =~ '(?s).*(neo4j|graphrag|cypher|knowledge graph|bolt://).*'
 RETURN toString(date(datetime(o.started_at))) AS day, p.name AS project, o.type AS type,
        left(o.title, 90) AS observation
 ORDER BY o.started_at LIMIT 15;
+
+// Q13: Audit: which prompts did I type per session? (noise excluded, machine-written prompts marked)
+// Same rules as prompt_audit.py, which compares this with the raw transcripts. Noise is what Claude Code injects
+// as a prompt: background-task notifications, ! shell input, system reminders, compaction summaries.
+// Machine-written: headless runs and the brief a session hands to a session it starts.
+MATCH (p:Project {id: 'haystack-workshop'})
+MATCH (s:Session)-[:HAS_EVENT]->(seen:SessionEvent)
+WHERE coalesce(s.agent_kind, 'main') = 'main' AND seen.cwd STARTS WITH p.repo_root
+WITH DISTINCT s
+MATCH (s)-[:HAS_EVENT]->(e:SessionEvent {event_name: 'UserPromptSubmit'})
+WITH s, e, trim(e.prompt) AS t
+// live hooks keep injected <system-reminder> blocks in front of the typed text, the importer drops them
+WITH s, e, CASE WHEN t STARTS WITH '<system-reminder>' THEN trim(last(split(t, '</system-reminder>'))) ELSE t END AS t
+WITH s, e, t, CASE
+  WHEN t = '' OR any(x IN ['<task-notification>', '<bash-input>', '<bash-stdout>', '<bash-stderr>', '<system-reminder>',
+                           '<agent-message', '<local-command-stdout>', '[Request interrupted',
+                           'This session is being continued from a previous conversation'] WHERE t STARTS WITH x)
+    THEN 'noise'
+  WHEN t =~ '(?s)(Task|Background) \\(from the session that started this one\\).*'
+    OR t STARTS WITH 'Answer ONLY from the meta-knowledge-graph MCP tool' OR t STARTS WITH 'Without using any tools:'
+    THEN 'machine'
+  ELSE 'developer' END AS kind
+WITH s, e, t, kind ORDER BY e.timestamp
+WITH s, min(e.timestamp) AS first, count(CASE WHEN kind = 'developer' THEN 1 END) AS developer,
+     count(CASE WHEN kind = 'machine' THEN 1 END) AS machine, count(CASE WHEN kind = 'noise' THEN 1 END) AS noise,
+     [x IN collect({k: kind, t: t}) WHERE x.k <> 'noise' |
+      CASE WHEN x.k = 'machine' THEN '[machine] ' ELSE '' END + left(replace(x.t, '\n', ' '), 50)] AS prompts
+RETURN left(s.session_id, 8) AS session, toString(date(first)) AS day, developer, machine, noise, prompts
+ORDER BY first;
