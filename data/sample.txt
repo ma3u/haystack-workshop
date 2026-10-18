@@ -1,0 +1,15 @@
+Haystack is an open-source Python framework by deepset for building production-ready LLM applications. It provides a declarative pipeline API where you connect reusable components into DAGs.
+
+Pipelines run both synchronously and asynchronously. Components declare typed inputs and outputs via @component.output_types.
+
+Common component categories:
+- Retrievers: BM25, Embedding, Hybrid
+- Generators: OpenAI, Anthropic, HuggingFace, Local
+- Embedders: SentenceTransformers, OpenAI, Cohere
+- Document Stores: InMemory, Qdrant, Weaviate, Elasticsearch, Pinecone
+- Rankers: TransformersSimilarityRanker, LostInTheMiddleRanker
+- Joiners: DocumentJoiner for merging multiple retriever outputs
+
+The Agent abstraction (new in 2.x) wraps a ChatGenerator with tool-calling for multi-step reasoning. Tools are typed functions with JSON schemas.
+
+Pipelines serialize to YAML via pipeline.dumps() and load back via Pipeline.loads(), enabling config-driven deployment.

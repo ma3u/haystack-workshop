@@ -1,0 +1,47 @@
+Kestrel Dynamics is a robotics company founded in 2017 by Mira Okafor, who still serves as its CEO. The company is headquartered in Montreal and employs around 340 people across four offices. Its products focus on autonomous inspection drones and fleet software.
+
+Tomas Brandt is the Chief Technology Officer of Kestrel Dynamics. He joined in 2019 after a decade in satellite guidance systems. Tomas Brandt works from the Lisbon office and chairs the quarterly architecture review.
+
+Project Halcyon develops autonomous navigation for bridge and pipeline inspection drones. Its first customer is the Port of Vigo authority, where a pilot started in 2024. Project Halcyon is led by Ines Varga.
+
+Ines Varga was a research scientist in computer vision before joining Kestrel Dynamics in 2020. She holds two patents on visual odometry. Ines Varga reports directly to Tomas Brandt.
+
+Project Halcyon stores its 3D inspection maps in Lumen DB, a spatial database built in-house. Map tiles are refreshed every night from drone flight logs.
+
+Lumen DB is developed and operated by the Data Platform team. The team also runs the company's feature store and nightly ETL jobs. The Data Platform team is headed by Felix Moreau.
+
+Felix Moreau previously built payment infrastructure at an Estonian bank. Felix Moreau works from the Tallinn office and mentors the infrastructure guild.
+
+Project Borealis researches solid-state battery packs for long-range drones. Jonas Lindqvist leads Project Borealis and reports to Tomas Brandt. The project's 2025 budget is 2.4 million euros.
+
+The battery cells for Project Borealis are manufactured by the partner company Velta Cells. Kestrel Dynamics signed a three-year supply agreement with Velta Cells in 2023.
+
+Velta Cells is a battery manufacturer based in Osaka. Its CEO is Rin Takahashi, who founded the company in 2011.
+
+Since early 2025, Halcyon inspection drones fly with the Borealis battery prototype, which roughly doubled their flight time.
+
+Project Sable is a fleet analytics product that predicts maintenance needs for drone fleets. Priya Raman leads Project Sable and reports to Mira Okafor.
+
+Project Sable's largest customer is Arctura Logistics, a freight company based in Rotterdam. Arctura Logistics uses Sable to monitor 900 drones across European ports.
+
+The Arctura Logistics account is managed by Lea Fontaine. The contract renews in March 2026.
+
+Lea Fontaine is a senior account manager in the sales team. Lea Fontaine works from the Montreal office.
+
+Project Sable streams telemetry over the Corvid message bus. Corvid handles about two billion events per day.
+
+Corvid was created by Hana Sato during an internal hackathon in 2020. It later became the standard event bus at Kestrel Dynamics.
+
+Hana Sato is the head of security engineering. Hana Sato works from the Osaka office and leads the yearly red-team exercise.
+
+Project Quill is an internal documentation search tool. Quill indexes engineering wikis and stores its embeddings in Lumen DB. Project Quill is led by Ana Petrov.
+
+Ana Petrov reports to Felix Moreau and joined the company in 2022 as a search engineer.
+
+The Lisbon office opened in 2018 and focuses on autonomy software. It hosts about 90 engineers.
+
+The Tallinn office focuses on data and infrastructure engineering and opened in 2021.
+
+The Osaka office opened in 2022 and focuses on hardware and security. Kenji Mori is the head of the Osaka office.
+
+Diego Alvarez is the CFO of Kestrel Dynamics and approves all budgets above 500,000 euros. Diego Alvarez works from the Montreal headquarters.

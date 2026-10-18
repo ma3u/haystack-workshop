@@ -1,0 +1,1661 @@
+{
+  "runs": 3,
+  "results": {
+    "vector": [
+      {
+        "id": "s1",
+        "context_hit": true,
+        "ctx_tokens": 220,
+        "answers": [
+          "Project Halcyon is led by Ines Varga.",
+          "Ines Varga leads Project Halcyon.",
+          "Project Halcyon is led by Ines Varga."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference exactly by naming Ines Varga as the leader."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate gives the same name as the reference, Ines Varga."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate states the same leader, Ines Varga, as the reference."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s2",
+        "context_hit": true,
+        "ctx_tokens": 204,
+        "answers": [
+          "Velta Cells manufactures the battery cells for Project Borealis.",
+          "Velta Cells manufactures the battery cells for Project Borealis.",
+          "Velta Cells manufactures the battery cells for Project Borealis."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate gives the same answer as the reference: Velta Cells manufactures the battery cells for Project Borealis."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate correctly names Velta Cells as the battery cell manufacturer for Project Borealis."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference exactly: Velta Cells manufactures the battery cells for Project Borealis."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s3",
+        "context_hit": true,
+        "ctx_tokens": 197,
+        "answers": [
+          "Felix Moreau heads the Data Platform team.",
+          "Felix Moreau heads the Data Platform team.",
+          "Felix Moreau heads the Data Platform team."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference exactly by naming Felix Moreau as head of the Data Platform team."
+          },
+          {
+            "correct": true,
+            "reason": "Candidate gives the same name as the reference: Felix Moreau."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate gives the same name as the reference: Felix Moreau."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s4",
+        "context_hit": true,
+        "ctx_tokens": 206,
+        "answers": [
+          "Project Sable's largest customer is Arctura Logistics.",
+          "Project Sable's largest customer is Arctura Logistics.",
+          "Project Sable's largest customer is Arctura Logistics."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference exactly: Arctura Logistics."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference exactly by naming Arctura Logistics as the largest customer."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference, naming Arctura Logistics as Project Sable's largest customer."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s5",
+        "context_hit": true,
+        "ctx_tokens": 103,
+        "answers": [
+          "Hana Sato created the Corvid message bus.",
+          "Hana Sato created the Corvid message bus.",
+          "Hana Sato created the Corvid message bus."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate names Hana Sato as the creator, which matches the reference answer."
+          },
+          {
+            "correct": true,
+            "reason": "Candidate states that Hana Sato created the Corvid message bus, matching the reference answer."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate correctly names Hana Sato as the creator of the Corvid message bus."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s6",
+        "context_hit": true,
+        "ctx_tokens": 216,
+        "answers": [
+          "The CEO of Velta Cells is Rin Takahashi.",
+          "Rin Takahashi is the CEO of Velta Cells.",
+          "The CEO of Velta Cells is Rin Takahashi."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate's answer matches the reference exactly."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate states the same name as the reference: Rin Takahashi is the CEO of Velta Cells."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate's answer exactly matches the reference name, Rin Takahashi."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s7",
+        "context_hit": true,
+        "ctx_tokens": 137,
+        "answers": [
+          "Lea Fontaine manages the Arctura Logistics account.",
+          "Lea Fontaine manages the Arctura Logistics account.",
+          "Lea Fontaine manages the Arctura Logistics account."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "Candidate answer matches the reference exactly."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer names Lea Fontaine, which matches the reference exactly."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate names Lea Fontaine, which matches the reference answer."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s8",
+        "context_hit": true,
+        "ctx_tokens": 128,
+        "answers": [
+          "Project Quill stores its embeddings in Lumen DB.",
+          "Project Quill stores its embeddings in Lumen DB.",
+          "Project Quill stores its embeddings in Lumen DB."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference exactly by stating the embeddings are stored in Lumen DB."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer exactly matches the reference answer: Lumen DB."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer exactly matches the reference answer: Lumen DB."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m1",
+        "context_hit": true,
+        "ctx_tokens": 225,
+        "answers": [
+          "I don't know.",
+          "I don't know.",
+          "I don't know."
+        ],
+        "verdicts": [
+          {
+            "correct": false,
+            "reason": "The candidate answered 'I don't know,' which does not match the reference answer 'Tomas Brandt.'"
+          },
+          {
+            "correct": false,
+            "reason": "The candidate answered 'I don't know' instead of naming Tomas Brandt."
+          },
+          {
+            "correct": false,
+            "reason": "The candidate answered 'I don't know' instead of providing the correct name, Tomas Brandt."
+          }
+        ],
+        "accuracy": 0
+      },
+      {
+        "id": "m2",
+        "context_hit": false,
+        "ctx_tokens": 203,
+        "answers": [
+          "I don't know.",
+          "I don't know.",
+          "I don't know."
+        ],
+        "verdicts": [
+          {
+            "correct": false,
+            "reason": "Incorrect \u2014 the reference answer is 'Lisbon', but the candidate replied 'I don't know'."
+          },
+          {
+            "correct": false,
+            "reason": "The candidate replied 'I don't know' instead of giving the reference answer 'Lisbon'."
+          },
+          {
+            "correct": false,
+            "reason": "Candidate answered 'I don't know', which does not match the reference 'Lisbon'."
+          }
+        ],
+        "accuracy": 0
+      },
+      {
+        "id": "m3",
+        "context_hit": true,
+        "ctx_tokens": 231,
+        "answers": [
+          "Felix Moreau heads the team that develops the database used by Project Halcyon.",
+          "Felix Moreau heads the team.",
+          "Felix Moreau heads the team."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference by naming Felix Moreau as the team head."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer names Felix Moreau, which matches the reference."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate names Felix Moreau, which matches the reference answer."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m4",
+        "context_hit": false,
+        "ctx_tokens": 193,
+        "answers": [
+          "I don't know.",
+          "I don't know.",
+          "I don't know."
+        ],
+        "verdicts": [
+          {
+            "correct": false,
+            "reason": "Candidate answered 'I don't know', which does not match the reference answer 'Tallinn'."
+          },
+          {
+            "correct": false,
+            "reason": "Incorrect \u2014 the candidate answered 'I don't know' instead of the reference answer 'Tallinn'."
+          },
+          {
+            "correct": false,
+            "reason": "Incorrect \u2014 the candidate answered 'I don't know' instead of the reference answer 'Tallinn'."
+          }
+        ],
+        "accuracy": 0
+      },
+      {
+        "id": "m5",
+        "context_hit": true,
+        "ctx_tokens": 189,
+        "answers": [
+          "Hana Sato created it.",
+          "Hana Sato created the message bus.",
+          "It was created by Hana Sato."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "Candidate answer matches the reference name exactly."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer names Hana Sato, which exactly matches the reference."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer states the same creator, Hana Sato, matching the reference."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m6",
+        "context_hit": false,
+        "ctx_tokens": 196,
+        "answers": [
+          "I don't know.",
+          "I don't know.",
+          "I don't know."
+        ],
+        "verdicts": [
+          {
+            "correct": false,
+            "reason": "Incorrect \u2014 the candidate answered 'I don't know' instead of the correct office, 'Osaka'."
+          },
+          {
+            "correct": false,
+            "reason": "Incorrect \u2014 the reference answer is 'Osaka' but the candidate replied 'I don't know.'"
+          },
+          {
+            "correct": false,
+            "reason": "The candidate replied 'I don't know' instead of the correct office, Osaka."
+          }
+        ],
+        "accuracy": 0
+      },
+      {
+        "id": "m7",
+        "context_hit": true,
+        "ctx_tokens": 207,
+        "answers": [
+          "The manufacturer is based in Osaka.",
+          "I don't know.",
+          "They are based in Osaka."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate states the manufacturer is based in Osaka, which matches the reference answer."
+          },
+          {
+            "correct": false,
+            "reason": "The candidate responded \"I don't know\" instead of providing the required answer \"Osaka\"."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate's answer matches the reference: Osaka."
+          }
+        ],
+        "accuracy": 0.6666666666666666
+      },
+      {
+        "id": "m8",
+        "context_hit": true,
+        "ctx_tokens": 224,
+        "answers": [
+          "Jonas Lindqvist leads Project Borealis.",
+          "Jonas Lindqvist leads that project.",
+          "Jonas Lindqvist leads that project."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate names Jonas Lindqvist, matching the reference."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate's answer matches the reference exactly: Jonas Lindqvist leads the project."
+          },
+          {
+            "correct": true,
+            "reason": "Candidate names Jonas Lindqvist, which matches the reference answer."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m9",
+        "context_hit": true,
+        "ctx_tokens": 214,
+        "answers": [
+          "Priya Raman reports to Mira Okafor.",
+          "Priya Raman reports to Mira Okafor.",
+          "Priya Raman reports to Mira Okafor."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate correctly identifies Mira Okafor as the person Priya Raman reports to."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate identifies Mira Okafor as the person the project lead reports to, matching the reference answer."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate explicitly states that Priya Raman reports to Mira Okafor, matching the reference answer."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m10",
+        "context_hit": true,
+        "ctx_tokens": 169,
+        "answers": [
+          "Project Halcyon and Project Quill store data in Lumen DB.",
+          "Project Halcyon and Project Quill store data in Lumen DB.",
+          "Projects Halcyon and Quill store data in Lumen DB."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate lists both Project Halcyon and Project Quill, matching the reference answer."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate names both Project Halcyon and Project Quill as storing data in Lumen DB, matching the reference."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate lists both Project Halcyon and Project Quill, matching the reference answer."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m11",
+        "context_hit": true,
+        "ctx_tokens": 234,
+        "answers": [
+          "Jonas Lindqvist, the lead of Project Borealis, reports to Tomas Brandt.",
+          "Jonas Lindqvist reports to Tomas Brandt.",
+          "Jonas Lindqvist, the lead of Project Borealis, reports to Tomas Brandt."
+        ],
+        "verdicts": [
+          {
+            "correct": false,
+            "reason": "Incorrect \u2014 the candidate only names Jonas Lindqvist and omits Ines Varga."
+          },
+          {
+            "correct": false,
+            "reason": "Incorrect \u2014 candidate only names Jonas Lindqvist and omits Ines Varga."
+          },
+          {
+            "correct": false,
+            "reason": "The candidate omits Ines Varga and only lists Jonas Lindqvist, so it does not match the reference."
+          }
+        ],
+        "accuracy": 0
+      },
+      {
+        "id": "m12",
+        "context_hit": true,
+        "ctx_tokens": 191,
+        "answers": [
+          "I don't know.",
+          "I don't know.",
+          "I don't know."
+        ],
+        "verdicts": [
+          {
+            "correct": false,
+            "reason": "The candidate answered 'I don't know' instead of providing the reference answer 'Montreal'."
+          },
+          {
+            "correct": false,
+            "reason": "Incorrect \u2014 the reference answer is 'Montreal' but the candidate replied 'I don't know'."
+          },
+          {
+            "correct": false,
+            "reason": "Incorrect \u2014 the candidate replied 'I don't know' instead of the reference answer, Montreal."
+          }
+        ],
+        "accuracy": 0
+      },
+      {
+        "id": "m13",
+        "context_hit": true,
+        "ctx_tokens": 232,
+        "answers": [
+          "I don't know.",
+          "I don't know.",
+          "I don't know."
+        ],
+        "verdicts": [
+          {
+            "correct": false,
+            "reason": "Incorrect \u2014 the candidate answered 'I don't know' instead of 'Rin Takahashi'."
+          },
+          {
+            "correct": false,
+            "reason": "The candidate did not provide the required name; the correct answer is Rin Takahashi."
+          },
+          {
+            "correct": false,
+            "reason": "The candidate answered 'I don't know' instead of giving the required name Rin Takahashi."
+          }
+        ],
+        "accuracy": 0
+      },
+      {
+        "id": "m14",
+        "context_hit": false,
+        "ctx_tokens": 169,
+        "answers": [
+          "I don't know.",
+          "I don't know.",
+          "I don't know."
+        ],
+        "verdicts": [
+          {
+            "correct": false,
+            "reason": "Incorrect \u2014 the candidate answered \"I don't know\" instead of \"Felix Moreau\"."
+          },
+          {
+            "correct": false,
+            "reason": "Candidate answer does not match the reference; it says 'I don't know' instead of 'Felix Moreau'."
+          },
+          {
+            "correct": false,
+            "reason": "Incorrect \u2014 the correct answer is 'Felix Moreau', but the candidate answered 'I don't know.'"
+          }
+        ],
+        "accuracy": 0
+      }
+    ],
+    "vector_k8": [
+      {
+        "id": "s1",
+        "context_hit": true,
+        "ctx_tokens": 404,
+        "answers": [
+          "Project Halcyon is led by Ines Varga.",
+          "Project Halcyon is led by Ines Varga.",
+          "Project Halcyon is led by Ines Varga."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate explicitly names Ines Varga as the leader, matching the reference answer."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference by stating that Ines Varga leads Project Halcyon."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate correctly names Ines Varga as the leader of Project Halcyon."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s2",
+        "context_hit": true,
+        "ctx_tokens": 351,
+        "answers": [
+          "Velta Cells manufactures the battery cells for Project Borealis.",
+          "Velta Cells manufactures the battery cells for Project Borealis.",
+          "Velta Cells manufactures the battery cells for Project Borealis."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate states the same manufacturer, Velta Cells, as the reference."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference \u2014 Velta Cells manufactures the battery cells for Project Borealis."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference by naming Velta Cells as the manufacturer."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s3",
+        "context_hit": true,
+        "ctx_tokens": 307,
+        "answers": [
+          "Felix Moreau heads the Data Platform team.",
+          "Felix Moreau heads the Data Platform team.",
+          "The Data Platform team is headed by Felix Moreau."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference exactly."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate gives the same name as the reference: Felix Moreau."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer names Felix Moreau as the head, which matches the reference."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s4",
+        "context_hit": true,
+        "ctx_tokens": 381,
+        "answers": [
+          "Project Sable's largest customer is Arctura Logistics.",
+          "Project Sable's largest customer is Arctura Logistics.",
+          "Project Sable's largest customer is Arctura Logistics."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate answer names Arctura Logistics, which exactly matches the reference."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer exactly matches the reference by naming Arctura Logistics as Project Sable's largest customer."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer exactly matches the reference: Arctura Logistics."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s5",
+        "context_hit": true,
+        "ctx_tokens": 333,
+        "answers": [
+          "Hana Sato created the Corvid message bus.",
+          "Hana Sato created the Corvid message bus.",
+          "Hana Sato created the Corvid message bus."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference exactly, naming Hana Sato as the creator of the Corvid message bus."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference by naming Hana Sato as the creator."
+          },
+          {
+            "correct": true,
+            "reason": "Candidate answer matches the reference: both state Hana Sato created the Corvid message bus."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s6",
+        "context_hit": true,
+        "ctx_tokens": 345,
+        "answers": [
+          "The CEO of Velta Cells is Rin Takahashi.",
+          "The CEO of Velta Cells is Rin Takahashi.",
+          "The CEO of Velta Cells is Rin Takahashi."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate's answer matches the reference exactly: Rin Takahashi."
+          },
+          {
+            "correct": true,
+            "reason": "Matches the reference answer: Rin Takahashi."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference answer by naming Rin Takahashi as CEO."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s7",
+        "context_hit": true,
+        "ctx_tokens": 317,
+        "answers": [
+          "Lea Fontaine manages the Arctura Logistics account.",
+          "Lea Fontaine manages the Arctura Logistics account.",
+          "Lea Fontaine manages the Arctura Logistics account."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate provides the same name as the reference: Lea Fontaine."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate correctly identifies Lea Fontaine as the manager of the Arctura Logistics account."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate gives the same name as the reference (Lea Fontaine)."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s8",
+        "context_hit": true,
+        "ctx_tokens": 342,
+        "answers": [
+          "Project Quill stores its embeddings in Lumen DB.",
+          "Project Quill stores its embeddings in Lumen DB.",
+          "Project Quill stores its embeddings in Lumen DB."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "Matches the reference by stating that embeddings are stored in Lumen DB."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer exactly matches the reference by stating embeddings are stored in Lumen DB."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate explicitly states the embeddings are stored in Lumen DB, which matches the reference answer."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m1",
+        "context_hit": false,
+        "ctx_tokens": 342,
+        "answers": [
+          "I don't know.",
+          "I don't know.",
+          "I don't know."
+        ],
+        "verdicts": [
+          {
+            "correct": false,
+            "reason": "Candidate said \"I don't know\", which does not match the reference answer \"Tomas Brandt\"."
+          },
+          {
+            "correct": false,
+            "reason": "The candidate answered 'I don't know' instead of naming Tomas Brandt."
+          },
+          {
+            "correct": false,
+            "reason": "The candidate answered 'I don't know' but the reference specifies Tomas Brandt."
+          }
+        ],
+        "accuracy": 0
+      },
+      {
+        "id": "m2",
+        "context_hit": true,
+        "ctx_tokens": 334,
+        "answers": [
+          "I don't know.",
+          "I don't know.",
+          "I don't know."
+        ],
+        "verdicts": [
+          {
+            "correct": false,
+            "reason": "The candidate did not provide the required answer 'Lisbon' and responded with 'I don't know.'"
+          },
+          {
+            "correct": false,
+            "reason": "The candidate answered 'I don't know' instead of the correct office, Lisbon."
+          },
+          {
+            "correct": false,
+            "reason": "Incorrect \u2014 the reference answer is 'Lisbon' but the candidate replied 'I don't know'."
+          }
+        ],
+        "accuracy": 0
+      },
+      {
+        "id": "m3",
+        "context_hit": true,
+        "ctx_tokens": 347,
+        "answers": [
+          "Felix Moreau heads the Data Platform team.",
+          "Felix Moreau heads the Data Platform team.",
+          "The team is headed by Felix Moreau."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "Candidate correctly names Felix Moreau as the head of the Data Platform team responsible for the database."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate names Felix Moreau, matching the reference answer."
+          },
+          {
+            "correct": true,
+            "reason": "Candidate answer matches the reference exactly."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m4",
+        "context_hit": true,
+        "ctx_tokens": 302,
+        "answers": [
+          "I don't know.",
+          "I don't know.",
+          "I don't know."
+        ],
+        "verdicts": [
+          {
+            "correct": false,
+            "reason": "The candidate answered \"I don't know\" instead of giving the correct office, Tallinn."
+          },
+          {
+            "correct": false,
+            "reason": "Incorrect \u2014 the candidate answered 'I don't know' but the reference answer is 'Tallinn'."
+          },
+          {
+            "correct": false,
+            "reason": "The candidate answered 'I don't know' instead of providing the office name Tallinn."
+          }
+        ],
+        "accuracy": 0
+      },
+      {
+        "id": "m5",
+        "context_hit": true,
+        "ctx_tokens": 345,
+        "answers": [
+          "Hana Sato created the message bus.",
+          "It was created by Hana Sato.",
+          "Hana Sato created the message bus."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "Candidate answer matches the reference by naming Hana Sato as the creator."
+          },
+          {
+            "correct": true,
+            "reason": "Candidate states the same creator as the reference: Hana Sato."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate states the same creator as the reference: Hana Sato."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m6",
+        "context_hit": false,
+        "ctx_tokens": 352,
+        "answers": [
+          "I don't know.",
+          "I don't know.",
+          "I don't know."
+        ],
+        "verdicts": [
+          {
+            "correct": false,
+            "reason": "Incorrect \u2014 the candidate answered 'I don't know' instead of the reference answer 'Osaka'."
+          },
+          {
+            "correct": false,
+            "reason": "Incorrect \u2014 the reference answer is 'Osaka' but the candidate said 'I don't know.'"
+          },
+          {
+            "correct": false,
+            "reason": "The candidate answered 'I don't know,' which does not match the reference answer 'Osaka'."
+          }
+        ],
+        "accuracy": 0
+      },
+      {
+        "id": "m7",
+        "context_hit": true,
+        "ctx_tokens": 410,
+        "answers": [
+          "They are based in Osaka.",
+          "The manufacturer is based in Osaka.",
+          "The manufacturer is based in Osaka."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "Candidate gives the same city as the reference: Osaka."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer states the manufacturer is based in Osaka, which matches the reference answer."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference city, Osaka."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m8",
+        "context_hit": true,
+        "ctx_tokens": 403,
+        "answers": [
+          "Jonas Lindqvist leads the project.",
+          "Jonas Lindqvist leads Project Borealis.",
+          "The project is led by Jonas Lindqvist."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate gives the same name as the reference, Jonas Lindqvist."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate names Jonas Lindqvist, matching the reference (with an added correct detail about Project Borealis)."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference by naming Jonas Lindqvist as the project lead."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m9",
+        "context_hit": true,
+        "ctx_tokens": 330,
+        "answers": [
+          "She reports to Mira Okafor.",
+          "She reports to Mira Okafor.",
+          "Priya Raman reports to Mira Okafor."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference exactly by stating she reports to Mira Okafor."
+          },
+          {
+            "correct": true,
+            "reason": "Candidate answer matches the reference by naming Mira Okafor."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate states the lead reports to Mira Okafor, which matches the reference."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m10",
+        "context_hit": true,
+        "ctx_tokens": 337,
+        "answers": [
+          "Project Halcyon and Project Quill store data in Lumen DB.",
+          "Project Halcyon and Project Quill store data in Lumen DB.",
+          "Project Halcyon and Project Quill store data in Lumen DB."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate lists both Project Halcyon and Project Quill, matching the reference answer exactly."
+          },
+          {
+            "correct": true,
+            "reason": "Candidate lists both Project Halcyon and Project Quill, matching the reference."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate lists both Project Halcyon and Project Quill, which matches the reference answer."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m11",
+        "context_hit": false,
+        "ctx_tokens": 379,
+        "answers": [
+          "Ines Varga, the lead of Project Halcyon.",
+          "Ines Varga, the lead of Project Halcyon, reports to Tomas Brandt.",
+          "Ines Varga, the lead of Project Halcyon, reports to Tomas Brandt."
+        ],
+        "verdicts": [
+          {
+            "correct": false,
+            "reason": "Incorrect \u2014 the candidate only lists Ines Varga and omits Jonas Lindqvist."
+          },
+          {
+            "correct": false,
+            "reason": "The candidate only names Ines Varga but omits Jonas Lindqvist."
+          },
+          {
+            "correct": false,
+            "reason": "The candidate mentions Ines Varga but omits Jonas Lindqvist, who also reports to Tomas Brandt."
+          }
+        ],
+        "accuracy": 0
+      },
+      {
+        "id": "m12",
+        "context_hit": true,
+        "ctx_tokens": 314,
+        "answers": [
+          "Lea Fontaine, the account manager, works from the Montreal office.",
+          "The account manager works from the Montreal office.",
+          "Lea Fontaine, the account manager, works from the Montreal office."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate explicitly states the account manager works from the Montreal office, which matches the reference."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate gives the same answer as the reference: Montreal."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate states the account manager works from the Montreal office, which matches the reference."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m13",
+        "context_hit": true,
+        "ctx_tokens": 391,
+        "answers": [
+          "I don't know.",
+          "I don't know.",
+          "I don't know."
+        ],
+        "verdicts": [
+          {
+            "correct": false,
+            "reason": "Candidate did not provide the correct answer; the CEO is Rin Takahashi."
+          },
+          {
+            "correct": false,
+            "reason": "Candidate answer 'I don't know' does not match the reference 'Rin Takahashi'."
+          },
+          {
+            "correct": false,
+            "reason": "The candidate answered 'I don't know' instead of providing the correct name, Rin Takahashi."
+          }
+        ],
+        "accuracy": 0
+      },
+      {
+        "id": "m14",
+        "context_hit": false,
+        "ctx_tokens": 357,
+        "answers": [
+          "I don't know.",
+          "I don't know.",
+          "I don't know."
+        ],
+        "verdicts": [
+          {
+            "correct": false,
+            "reason": "The candidate answered 'I don't know,' which does not match the reference answer 'Felix Moreau'."
+          },
+          {
+            "correct": false,
+            "reason": "Incorrect \u2014 the candidate answered 'I don't know' instead of giving the manager's name, Felix Moreau."
+          },
+          {
+            "correct": false,
+            "reason": "Incorrect \u2014 the candidate answered 'I don't know' but the reference answer is 'Felix Moreau'."
+          }
+        ],
+        "accuracy": 0
+      }
+    ],
+    "graphrag": [
+      {
+        "id": "s1",
+        "context_hit": true,
+        "ctx_tokens": 829,
+        "answers": [
+          "Project Halcyon is led by Ines Varga.",
+          "Ines Varga leads Project Halcyon.",
+          "Ines Varga leads Project Halcyon."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "Candidate names Ines Varga as the leader, which matches the reference."
+          },
+          {
+            "correct": true,
+            "reason": "Candidate gives the same name as the reference, Ines Varga."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer gives the same name, Ines Varga, as the reference."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s2",
+        "context_hit": true,
+        "ctx_tokens": 838,
+        "answers": [
+          "Velta Cells manufactures the battery cells for Project Borealis.",
+          "Velta Cells manufactures the battery cells for Project Borealis.",
+          "Velta Cells manufactures the battery cells for Project Borealis."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference by naming Velta Cells as the manufacturer."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate states the same answer as the reference: Velta Cells manufactures the battery cells for Project Borealis."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate gives the same answer as the reference: Velta Cells manufactures the battery cells for Project Borealis."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s3",
+        "context_hit": true,
+        "ctx_tokens": 795,
+        "answers": [
+          "Felix Moreau heads the Data Platform team.",
+          "Felix Moreau heads the Data Platform team.",
+          "Felix Moreau heads the Data Platform team."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "Candidate gives the same name as the reference answer."
+          },
+          {
+            "correct": true,
+            "reason": "Candidate answer matches the reference exactly."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer names Felix Moreau, matching the reference exactly."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s4",
+        "context_hit": true,
+        "ctx_tokens": 797,
+        "answers": [
+          "Project Sable's largest customer is Arctura Logistics.",
+          "Project Sable's largest customer is Arctura Logistics.",
+          "Project Sable's largest customer is Arctura Logistics."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "Candidate answer matches the reference exactly."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference by naming Arctura Logistics as the largest customer."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference exactly: Arctura Logistics."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s5",
+        "context_hit": true,
+        "ctx_tokens": 702,
+        "answers": [
+          "Hana Sato created the Corvid message bus.",
+          "Hana Sato created the Corvid message bus.",
+          "Hana Sato created the Corvid message bus."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "Candidate correctly names Hana Sato as the creator of the Corvid message bus."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference \u2014 both state Hana Sato created the Corvid message bus."
+          },
+          {
+            "correct": true,
+            "reason": "Matches the reference: both state Hana Sato created the Corvid message bus."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s6",
+        "context_hit": true,
+        "ctx_tokens": 833,
+        "answers": [
+          "Rin Takahashi is the CEO of Velta Cells.",
+          "Rin Takahashi is the CEO of Velta Cells.",
+          "Rin Takahashi is the CEO of Velta Cells."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate names Rin Takahashi as CEO, which matches the reference."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate states the CEO is Rin Takahashi, which matches the reference answer."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference\u2014Rin Takahashi is identified as Velta Cells' CEO."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s7",
+        "context_hit": true,
+        "ctx_tokens": 445,
+        "answers": [
+          "Lea Fontaine manages the Arctura Logistics account.",
+          "Lea Fontaine manages the Arctura Logistics account.",
+          "Lea Fontaine manages the Arctura Logistics account."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate gives the same name as the reference: Lea Fontaine manages the Arctura Logistics account."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate names Lea Fontaine, which matches the reference answer exactly."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate names Lea Fontaine, which matches the reference answer."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "s8",
+        "context_hit": true,
+        "ctx_tokens": 712,
+        "answers": [
+          "Project Quill stores its embeddings in Lumen DB.",
+          "Project Quill stores its embeddings in Lumen DB.",
+          "Project Quill stores its embeddings in Lumen DB."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "Candidate answer matches the reference by stating Lumen DB."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference by stating the embeddings are stored in Lumen DB."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference by stating that Project Quill uses Lumen DB for embeddings."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m1",
+        "context_hit": true,
+        "ctx_tokens": 834,
+        "answers": [
+          "Ines Varga reports to Tomas Brandt.",
+          "Ines Varga reports to Tomas Brandt.",
+          "Ines Varga reports to Tomas Brandt."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate correctly identifies Tomas Brandt as the person the lead reports to."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate states that Ines Varga (the lead) reports to Tomas Brandt, which matches the reference."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate states that the lead reports to Tomas Brandt, matching the reference answer."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m2",
+        "context_hit": true,
+        "ctx_tokens": 801,
+        "answers": [
+          "He works from the Lisbon office.",
+          "He works from the Lisbon office.",
+          "He works from the Lisbon office."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate answer explicitly states the manager works from the Lisbon office, matching the reference."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate states the manager works from the Lisbon office, which matches the reference."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate states the same location as the reference: the Lisbon office."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m3",
+        "context_hit": true,
+        "ctx_tokens": 823,
+        "answers": [
+          "Felix Moreau heads the team.",
+          "Felix Moreau heads the Data Platform team.",
+          "Felix Moreau heads the Data Platform team."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate answer names Felix Moreau, matching the reference."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate names Felix Moreau, matching the reference answer."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate names Felix Moreau as the head, which matches the reference."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m4",
+        "context_hit": true,
+        "ctx_tokens": 769,
+        "answers": [
+          "Felix Moreau works from the Tallinn office.",
+          "He works from the Tallinn office.",
+          "Felix Moreau works from the Tallinn office."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate answer states Tallinn, which matches the reference."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference office: Tallinn."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate specifies the Tallinn office, which matches the reference answer."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m5",
+        "context_hit": true,
+        "ctx_tokens": 788,
+        "answers": [
+          "The message bus was created by Hana Sato.",
+          "Hana Sato created the message bus.",
+          "It was created by Hana Sato."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate states the same person as the reference: Hana Sato."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer exactly matches the reference answer that Hana Sato created the message bus."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate states the same creator as the reference: Hana Sato."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m6",
+        "context_hit": true,
+        "ctx_tokens": 795,
+        "answers": [
+          "She works in the Osaka office.",
+          "Hana Sato works in the Osaka office.",
+          "Hana Sato works in the Osaka office."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate states Osaka, which matches the reference answer."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate states the Osaka office, which matches the reference answer."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate states Hana Sato works in the Osaka office, which matches the reference answer (Osaka)."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m7",
+        "context_hit": true,
+        "ctx_tokens": 827,
+        "answers": [
+          "The manufacturer is based in Osaka.",
+          "The manufacturer is based in Osaka.",
+          "They are based in Osaka."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "Candidate answer matches the reference by stating Osaka."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference by stating the manufacturer is based in Osaka."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference, stating Osaka as the city."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m8",
+        "context_hit": true,
+        "ctx_tokens": 856,
+        "answers": [
+          "Jonas Lindqvist leads Project Borealis.",
+          "Jonas Lindqvist leads Project Borealis.",
+          "Jonas Lindqvist leads Project Borealis."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate names Jonas Lindqvist, matching the reference (adding that he leads Project Borealis)."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate names Jonas Lindqvist, matching the reference answer exactly."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate correctly identifies Jonas Lindqvist as the project leader."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m9",
+        "context_hit": true,
+        "ctx_tokens": 808,
+        "answers": [
+          "Priya Raman reports to Mira Okafor.",
+          "She reports to Mira Okafor.",
+          "Priya Raman reports to Mira Okafor."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate names Mira Okafor as the person Priya Raman reports to, which matches the reference."
+          },
+          {
+            "correct": true,
+            "reason": "Candidate answer matches the reference by naming Mira Okafor as the person she reports to."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate names Mira Okafor as the person Priya Raman reports to, which matches the reference."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m10",
+        "context_hit": true,
+        "ctx_tokens": 753,
+        "answers": [
+          "Project Halcyon and Project Quill store data in Lumen DB.",
+          "Project Halcyon and Project Quill store data in Lumen DB.",
+          "Project Halcyon and Project Quill."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate lists both Project Halcyon and Project Quill, matching the reference answer."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate lists both Project Halcyon and Project Quill, matching the reference."
+          },
+          {
+            "correct": true,
+            "reason": "Candidate lists both Project Halcyon and Project Quill exactly as in the reference."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m11",
+        "context_hit": true,
+        "ctx_tokens": 855,
+        "answers": [
+          "Jonas Lindqvist (Project Borealis) and Ines Varga (Project Halcyon) report to Tomas Brandt.",
+          "Jonas Lindqvist and Ines Varga report to Tomas Brandt.",
+          "Ines Varga (Project Halcyon) and Jonas Lindqvist (Project Borealis) report to Tomas Brandt."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate lists Jonas Lindqvist and Ines Varga, matching the reference."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate lists both Ines Varga and Jonas Lindqvist, which matches the reference."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate lists both Ines Varga and Jonas Lindqvist, matching the reference answer."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m12",
+        "context_hit": true,
+        "ctx_tokens": 635,
+        "answers": [
+          "Lea Fontaine works from the Montreal office.",
+          "She works from the Montreal office.",
+          "She works from the Montreal office."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate specifies the Montreal office, which matches the reference answer."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate specifies the Montreal office, matching the reference answer."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate's answer matches the reference exactly by stating the Montreal office."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m13",
+        "context_hit": true,
+        "ctx_tokens": 840,
+        "answers": [
+          "Rin Takahashi is the CEO.",
+          "Rin Takahashi is the CEO.",
+          "The CEO is Rin Takahashi."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate answer matches the reference exactly by naming Rin Takahashi as the CEO."
+          },
+          {
+            "correct": true,
+            "reason": "Candidate provides the same name, Rin Takahashi, as the reference."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate answer names Rin Takahashi, which matches the reference answer."
+          }
+        ],
+        "accuracy": 1
+      },
+      {
+        "id": "m14",
+        "context_hit": true,
+        "ctx_tokens": 759,
+        "answers": [
+          "Felix Moreau is the manager of Ana Petrov.",
+          "Felix Moreau is the manager.",
+          "Her manager is Felix Moreau."
+        ],
+        "verdicts": [
+          {
+            "correct": true,
+            "reason": "The candidate identifies Felix Moreau as the manager, which matches the reference answer."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate gives the same manager name as the reference: Felix Moreau."
+          },
+          {
+            "correct": true,
+            "reason": "The candidate's answer matches the reference manager, Felix Moreau."
+          }
+        ],
+        "accuracy": 1
+      }
+    ]
+  }
+}

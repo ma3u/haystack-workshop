@@ -1,0 +1,25 @@
+[
+  {"id": "s1", "hops": 1, "question": "Who leads Project Halcyon?", "answer": "Ines Varga", "must_include": ["ines varga"]},
+  {"id": "s2", "hops": 1, "question": "Which company manufactures the battery cells for Project Borealis?", "answer": "Velta Cells", "must_include": ["velta cells"]},
+  {"id": "s3", "hops": 1, "question": "Who heads the Data Platform team?", "answer": "Felix Moreau", "must_include": ["felix moreau"]},
+  {"id": "s4", "hops": 1, "question": "What is Project Sable's largest customer?", "answer": "Arctura Logistics", "must_include": ["arctura logistics"]},
+  {"id": "s5", "hops": 1, "question": "Who created the Corvid message bus?", "answer": "Hana Sato", "must_include": ["hana sato"]},
+  {"id": "s6", "hops": 1, "question": "Who is the CEO of Velta Cells?", "answer": "Rin Takahashi", "must_include": ["rin takahashi"]},
+  {"id": "s7", "hops": 1, "question": "Who manages the Arctura Logistics account?", "answer": "Lea Fontaine", "must_include": ["lea fontaine"]},
+  {"id": "s8", "hops": 1, "question": "Which database does Project Quill store its embeddings in?", "answer": "Lumen DB", "must_include": ["lumen db"]},
+
+  {"id": "m1", "hops": 2, "question": "Who does the lead of Project Halcyon report to?", "answer": "Tomas Brandt", "must_include": ["tomas brandt"]},
+  {"id": "m2", "hops": 3, "question": "In which office does the manager of Project Halcyon's lead work?", "answer": "Lisbon", "must_include": ["lisbon"]},
+  {"id": "m3", "hops": 3, "question": "Who heads the team that develops the database used by Project Halcyon?", "answer": "Felix Moreau", "must_include": ["felix moreau"]},
+  {"id": "m4", "hops": 2, "question": "In which office does the head of the team behind Lumen DB work?", "answer": "Tallinn", "must_include": ["tallinn"]},
+  {"id": "m5", "hops": 2, "question": "Who created the message bus that Project Sable uses?", "answer": "Hana Sato", "must_include": ["hana sato"]},
+  {"id": "m6", "hops": 3, "question": "In which office does the creator of the message bus used by Project Sable work?", "answer": "Osaka", "must_include": ["osaka"]},
+  {"id": "m7", "hops": 3, "question": "In which city is the manufacturer of the batteries used by Halcyon drones based?", "answer": "Osaka", "must_include": ["osaka"]},
+  {"id": "m8", "hops": 2, "question": "Who leads the project whose battery prototype the Halcyon drones use?", "answer": "Jonas Lindqvist", "must_include": ["jonas lindqvist"]},
+  {"id": "m9", "hops": 2, "question": "Who does the lead of the project whose largest customer is Arctura Logistics report to?", "answer": "Mira Okafor", "must_include": ["mira okafor"]},
+  {"id": "m10", "hops": 2, "question": "Which projects store data in Lumen DB?", "answer": "Project Halcyon and Project Quill", "must_include": ["halcyon", "quill"]},
+  {"id": "m11", "hops": 2, "question": "Which project leads report to Tomas Brandt?", "answer": "Ines Varga and Jonas Lindqvist", "must_include": ["ines varga", "jonas lindqvist"]},
+  {"id": "m12", "hops": 3, "question": "In which office does the account manager for Project Sable's largest customer work?", "answer": "Montreal", "must_include": ["montreal"]},
+  {"id": "m13", "hops": 3, "question": "Who is the CEO of the company that manufactures cells for the project led by Jonas Lindqvist?", "answer": "Rin Takahashi", "must_include": ["rin takahashi"]},
+  {"id": "m14", "hops": 2, "question": "Who is the manager of the person who leads Project Quill?", "answer": "Felix Moreau", "must_include": ["felix moreau"]}
+]
