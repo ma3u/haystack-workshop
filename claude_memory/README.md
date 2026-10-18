@@ -132,6 +132,8 @@ Imported sessions get the same graph shape as live ones, because the importer ca
 | `ask_memory.py` | runs `cypher/questions.cypher`, writes `results/memory_questions.md` and screenshots (local only) |
 | `backfill_embeddings.py` | embeds `:Learning` / `:Observation` nodes written without an embedding |
 | `mcp_probe.py` | calls the MKG MCP server over stdio, without restarting Claude Code |
+| `recall_all.py` | recall over every project with a cosine score, a "no match" answer and the next episode on the timeline |
+| `memory_eval.py` | 10 questions to the memory, each checked against the real source, MCP vs `recall_all.py` |
 | `cypher/*.cypher` | read-only model, result and question queries |
 
 ## Status (2026-10-18)
@@ -154,6 +156,7 @@ Imported sessions get the same graph shape as live ones, because the importer ca
 | Questions on learnings and the episodic timeline (Q11, Q12) | Done 2026-10-18 |
 | APOC 2026.09.0 + GDS 2026.09.0 active (`plugins/`, `dbms.security.procedures.unrestricted=apoc.*,gds.*`) | Done 2026-10-18; needed for `neo4j_get_schema` / `neo4j_read_cypher` |
 | MCP tools tested (see "MCP test") | Done 2026-10-18 |
+| Memory recall tested against the real sources, gaps fixed (see "Memory recall test") | Done 2026-10-18 |
 | Rotate the AI Studio key and the Google keys found in the TwoBreath history | Done 2026-10-18 (by you) |
 
 ## Steps, in order
@@ -385,6 +388,9 @@ or need a skill that does not exist yet).
    `claude_memory/` or `~/projects`, so it sits under the projects `claude-memory` and `projects`. Asking
    `project_get_context` in `haystack-workshop` "Which Neo4j port does the workshop use?" returns nothing about the
    port; the top hit is unrelated. Without `project_id` the server uses the cwd project.
+   Cause: MKG names a project after the nearest directory with `.git`. Those sessions ran before `git init`
+   (2026-10-18 18:10), so `claude_memory/` became its own project. New sessions in any subdirectory now map to
+   `haystack-workshop`. Old facts stay where they are; `recall_all.py` searches all projects (see "Memory recall test").
 3. **No "no match" signal.** "kubernetes helm chart deployment" still returns 5 learnings. Scores are reciprocal-rank
    fusion values (0.015-0.033) and look the same for hits and misses, so the agent has to judge relevance itself.
 4. **`recent_observations` ignore the query.** `project_get_context` returns the same 5 latest observations for
@@ -409,6 +415,75 @@ or need a skill that does not exist yet).
 
 To use the tools inside Claude Code, start a new session (the MCP server mounts only at session start) and check
 that `mcp__meta-knowledge-graph__neo4j_read_cypher` is listed.
+
+## Memory recall test (2026-10-18)
+
+Ten questions to the long-term memory (learnings and episodes, not the raw trace), each checked against the real
+source: `.env`, the MKG credentials file, `git`, the Neo4j `plugins/` directory, `graphrag_eval_results.json`
+(accuracy recomputed), the benchmark files and the raw event trace. One off-topic control question must return
+nothing. `memory_eval.py` runs it; the truth column re-checks every expected answer at run time.
+
+```bash
+uv run --script claude_memory/memory_eval.py          # table to stdout; --md also writes results/memory_eval.md
+uv run --script claude_memory/recall_all.py "Which port does the memory Neo4j use?"
+```
+
+| # | Question | Source of truth | MCP before | MCP after | `recall_all` after |
+|---|----------|-----------------|------------|-----------|--------------------|
+| Q1 | Bolt port of the memory instance | `.env`: 7689 | fail (fact in `claude-memory`) | pass | pass |
+| Q2 | GraphRAG vs vector RAG accuracy | eval JSON: 100 % / 62 % / 68 % | pass | pass | pass |
+| Q3 | LLM and embedding model | MKG `.env`: `gpt-5-mini`, `text-embedding-3-small` | fail | pass | pass |
+| Q4 | Blocked push, how resolved | `git`: `34c915e` on `origin/main` | fail (only in episodes) | pass | pass |
+| Q5 | 2026-10-17 `AuthError` and fix | raw trace | fail (not extracted) | pass | pass |
+| Q6 | Why the Cypher MCP tools were missing | APOC jar in `plugins/` | pass | pass | pass |
+| Q7 | Imported events / transcripts | 2,963 / 19 | fail (fact in `claude-memory`) | pass | pass |
+| Q8 | Which leaked keys were rotated | AI Studio + 9 Google keys | fail (not extracted) | pass | pass |
+| Q9 | Recommended memory interface | `bench-*.json`: MCP 3/3 | fail (not extracted) | pass | pass |
+| Q10 | gpt-5-mini capacity change | raw trace: 50 to 1000 | pass | pass | pass |
+| C1 | "kubernetes helm chart ..." (off-topic) | must be empty | 3 unrelated learnings | 3 unrelated learnings | no match |
+
+MCP scores count the 3 learnings `project_get_context(project_id='haystack-workshop')` returns. Total: MCP 3/10
+before, 10/10 after; `recall_all.py` 5/10 before the memory fixes, 10/10 after.
+
+### Findings
+
+1. **Status beats relevance.** MKG's hybrid query sorts by `CASE node.status WHEN 'approved' THEN 0 ELSE 1 END`
+   before the fusion score (`server.py`, `_fetch_context_memory_hybrid`). Any approved learning outranks any
+   candidate. The exact answer to Q3 was rank 1 in the vector index (cosine 0.85) and still did not appear,
+   because 3 unrelated approved learnings came first. Candidates (half of the memory) are effectively invisible.
+2. **One project per call, and facts sit in the wrong one** (problem 2 above): Q1, Q3 and Q7 were answered only in
+   `claude-memory` or `projects`.
+3. **No "no match" signal.** The fusion score is 0.015-0.033 for hits and misses alike. The control question gets
+   3 learnings. Neo4j's cosine score separates them well: correct hits 0.78-0.91, off-topic best 0.55-0.69.
+4. **Facts are bundled.** One learning held port, credentials file, hooks and import counts together; its
+   embedding matched none of the questions well (Q7 best 0.74). The extraction gave 2-3 observations per imported
+   session, so the `AuthError` (Q5), the key rotation (Q8) and the benchmark result (Q9) were never extracted.
+5. **The gate blocks declarative facts phrased as setup** (`dda6d8fe…`, "should set NEO4J_URI …", tagged
+   `injection`). The same fact phrased as a statement passes.
+6. **Episodes answer "what happened", not "how was it fixed".** Q4's problem episode scores 0.88; its resolution is
+   the next episode on the `:NEXT` timeline (0.75), which neither MCP tool follows.
+7. **The test changes the memory.** Live hooks log every probe query, so a ground-truth Cypher query once matched
+   its own logged text. Raw-trace checks in `memory_eval.py` ignore events after `2026-10-18T20:00Z`.
+8. **`recent_observations` ignore the query** and are mostly about the latest session (here: the memory test itself).
+
+### Fixes
+
+| Finding | Fix | Where |
+|---------|-----|-------|
+| 2, 3, 6, 8 | `recall_all.py`: vector search over all projects, Neo4j cosine score, threshold 0.75 (calibrated on hits vs off-topic), observations ranked by the question, plus the `:NEXT` episode of every observation hit (GraphRAG step) | this repo |
+| 4 | 7 small, declarative learnings written with `project_add_learning` in `haystack-workshop`: port, models, `AuthError` fix (as `kind: error`), import counts, key rotation, benchmark, push resolution | memory graph |
+| 1 | The 7 learnings were checked against the sources above, then approved with `project_resolve_learning(action='approve')` (`reviewed_by: human`) | memory graph |
+| 2 | Root cause gone since `git init`; old facts are reached through `recall_all.py` | this repo |
+| 5 | Write facts as statements, not as steps (all 7 new learnings passed) | practice |
+| 7 | Time cutoff for raw-trace checks | `memory_eval.py` |
+
+Not fixed, because it needs a change to the plugin: the status-first ranking (finding 1) and the missing
+"no match" in `project_get_context` (C1). For an agent the reliable path is `recall_all.py`, or
+`project_get_context` with an explicit `project_id` and a relevance check of its own, and `neo4j_read_cypher`
+on the raw trace for single events.
+
+Caveat: the questions were written by the same session that wrote the fixes, so "after" measures that the gaps
+are closed, not general recall quality. New questions are the real test.
 
 ## Twelve questions about Neo4j projects and challenges
 
