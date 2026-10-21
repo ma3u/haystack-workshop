@@ -42,3 +42,16 @@ python 01_basic_pipeline.py
 ## GraphRAG
 
 See [GRAPHRAG.md](GRAPHRAG.md): vector RAG vs GraphRAG results, when to use which, and why Haystack fits GraphRAG.
+
+## Aura dashboard
+
+"Haystack GraphRAG on Neo4j" in Aura Console -> Dashboards: RAG vs GraphRAG accuracy, the entity graph,
+the agent's memory and the document stores. Queries: [dashboard.cypher](dashboard.cypher).
+
+```bash
+# point the exercises at Aura (env vars override .env), then fill it
+export NEO4J_URI=$NEO4J_AURA_URI NEO4J_USERNAME=$NEO4J_AURA_USER NEO4J_PASSWORD=$NEO4J_AURA_PASSWORD
+python 07_neo4j_document_store.py && python 08_neo4j_vector_rag.py && python 09_graphrag.py --reset && python 11_neo4j_memory_agent.py
+python eval_to_neo4j.py      # results/graphrag_eval_results.json -> (:EvalVariant)-[:ANSWERED]->(:EvalQuestion)
+python build_dashboard.py    # dashboard.cypher -> results/aura_dashboard.json, paste into Dashboards -> Import
+```

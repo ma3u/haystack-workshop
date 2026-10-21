@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "graph-memory": {
+      "type": "stdio",
+      "command": "venv/bin/python",
+      "args": [
+        "claude_memory/mcp_server.py"
+      ],
+      "env": {}
+    }
+  }
+}

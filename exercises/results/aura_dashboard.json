@@ -1,0 +1,285 @@
+{
+  "uuid": "ca06feda-1499-52a4-9479-06394f044532",
+  "title": "Haystack GraphRAG on Neo4j",
+  "version": "2.4",
+  "settings": {
+    "pagenumber": 0,
+    "editable": true,
+    "fullscreenEnabled": true,
+    "parameters": {}
+  },
+  "pages": [
+    {
+      "title": "RAG vs GraphRAG",
+      "reports": [
+        {
+          "id": "rag-vs-graphrag-intro",
+          "title": "About this dashboard",
+          "query": "**Haystack x Neo4j workshop.** Same LLM, same prompt: vector RAG retrieves passages that *look like* the question,\nGraphRAG adds 2-hop entity facts from the graph. Eval: 22 questions on a fictional company (8 single-hop, 14 multi-hop), 3 runs, LLM judge.\nBuilt by `exercises/09_graphrag.py`, `10_eval_rag_vs_graphrag.py`, `eval_to_neo4j.py`.",
+          "x": 0,
+          "y": 0,
+          "width": 24,
+          "height": 2,
+          "type": "text",
+          "selection": {},
+          "settings": {}
+        },
+        {
+          "id": "rag-vs-graphrag-d1",
+          "title": "GraphRAG accuracy",
+          "query": "MATCH (:EvalVariant {name: 'graphrag'})-[a:ANSWERED]->() RETURN toString(toInteger(round(100 * avg(a.accuracy)))) + ' %' AS `GraphRAG accuracy`",
+          "x": 0,
+          "y": 2,
+          "width": 8,
+          "height": 2,
+          "type": "value",
+          "selection": {},
+          "settings": {}
+        },
+        {
+          "id": "rag-vs-graphrag-d2",
+          "title": "Vector RAG accuracy",
+          "query": "MATCH (:EvalVariant {name: 'vector'})-[a:ANSWERED]->() RETURN toString(toInteger(round(100 * avg(a.accuracy)))) + ' %' AS `Vector RAG accuracy`",
+          "x": 8,
+          "y": 2,
+          "width": 8,
+          "height": 2,
+          "type": "value",
+          "selection": {},
+          "settings": {}
+        },
+        {
+          "id": "rag-vs-graphrag-d3",
+          "title": "Multi-hop gain (GraphRAG - vector)",
+          "query": "MATCH (v:EvalVariant)-[a:ANSWERED]->(q:EvalQuestion) WHERE q.hops > 1\nWITH v.name AS variant, avg(a.accuracy) AS acc\nWITH collect([variant, acc]) AS rows\nRETURN '+' + toString(toInteger(round(100 * ([r IN rows WHERE r[0] = 'graphrag'][0][1] - [r IN rows WHERE r[0] = 'vector'][0][1])))) + ' pts' AS `Multi-hop gain`",
+          "x": 16,
+          "y": 2,
+          "width": 8,
+          "height": 2,
+          "type": "value",
+          "selection": {},
+          "settings": {}
+        },
+        {
+          "id": "rag-vs-graphrag-d4",
+          "title": "Accuracy % by variant and question type",
+          "query": "MATCH (v:EvalVariant)-[a:ANSWERED]->(q:EvalQuestion)\nWITH v.name AS variant, avg(CASE WHEN q.hops = 1 THEN a.accuracy END) AS single, avg(CASE WHEN q.hops > 1 THEN a.accuracy END) AS multi\nRETURN variant, toInteger(round(100 * single)) AS `1-hop`, toInteger(round(100 * multi)) AS `multi-hop`\nORDER BY `multi-hop`",
+          "x": 0,
+          "y": 4,
+          "width": 16,
+          "height": 4,
+          "type": "bar",
+          "selection": {
+            "index": "variant",
+            "value": "multi-hop",
+            "key": "(none)"
+          },
+          "settings": {}
+        },
+        {
+          "id": "rag-vs-graphrag-d5",
+          "title": "Cost: avg prompt context (tokens)",
+          "query": "MATCH (v:EvalVariant)-[a:ANSWERED]->() RETURN v.name AS variant, toInteger(round(avg(a.ctx_tokens))) AS ctx_tokens ORDER BY ctx_tokens",
+          "x": 16,
+          "y": 4,
+          "width": 8,
+          "height": 4,
+          "type": "bar",
+          "selection": {
+            "index": "variant",
+            "value": "ctx_tokens",
+            "key": "(none)"
+          },
+          "settings": {}
+        },
+        {
+          "id": "rag-vs-graphrag-d6",
+          "title": "Per-question accuracy % (3 runs)",
+          "query": "MATCH (q:EvalQuestion)\nOPTIONAL MATCH (:EvalVariant {name: 'vector'})-[v:ANSWERED]->(q)\nOPTIONAL MATCH (:EvalVariant {name: 'vector_k8'})-[k:ANSWERED]->(q)\nOPTIONAL MATCH (:EvalVariant {name: 'graphrag'})-[g:ANSWERED]->(q)\nRETURN q.id AS id, q.hops AS hops, q.question AS question, q.answer AS reference,\n       toInteger(round(100 * v.accuracy)) AS vector, toInteger(round(100 * k.accuracy)) AS vector_k8, toInteger(round(100 * g.accuracy)) AS graphrag\nORDER BY q.hops, q.id",
+          "x": 0,
+          "y": 8,
+          "width": 24,
+          "height": 5,
+          "type": "table",
+          "selection": {},
+          "settings": {}
+        }
+      ]
+    },
+    {
+      "title": "Knowledge graph",
+      "reports": [
+        {
+          "id": "knowledge-graph-d7a",
+          "title": "Chunks",
+          "query": "MATCH (c:GraphRagChunk) RETURN count(c) AS Chunks",
+          "x": 0,
+          "y": 0,
+          "width": 8,
+          "height": 2,
+          "type": "value",
+          "selection": {},
+          "settings": {}
+        },
+        {
+          "id": "knowledge-graph-d7b",
+          "title": "Entities",
+          "query": "MATCH (e:GraphRagEntity) RETURN count(e) AS Entities",
+          "x": 8,
+          "y": 0,
+          "width": 8,
+          "height": 2,
+          "type": "value",
+          "selection": {},
+          "settings": {}
+        },
+        {
+          "id": "knowledge-graph-d7c",
+          "title": "Relations",
+          "query": "MATCH (:GraphRagEntity)-[r:REL]->(:GraphRagEntity) RETURN count(r) AS Relations",
+          "x": 16,
+          "y": 0,
+          "width": 8,
+          "height": 2,
+          "type": "value",
+          "selection": {},
+          "settings": {}
+        },
+        {
+          "id": "knowledge-graph-d8",
+          "title": "Multi-hop: Project Halcyon -> lead -> manager -> office",
+          "query": "MATCH p = (:GraphRagEntity {key: 'project halcyon'})-[:REL*1..3]-(:GraphRagEntity {type: 'Location'})\nRETURN p LIMIT 25",
+          "x": 0,
+          "y": 2,
+          "width": 12,
+          "height": 5,
+          "type": "graph",
+          "selection": {},
+          "settings": {}
+        },
+        {
+          "id": "knowledge-graph-d9",
+          "title": "Entity types extracted by the LLM",
+          "query": "MATCH (e:GraphRagEntity) RETURN e.type AS type, count(*) AS entities ORDER BY entities DESC",
+          "x": 12,
+          "y": 2,
+          "width": 12,
+          "height": 5,
+          "type": "bar",
+          "selection": {
+            "index": "type",
+            "value": "entities",
+            "key": "(none)"
+          },
+          "settings": {}
+        },
+        {
+          "id": "knowledge-graph-d11",
+          "title": "Entity graph",
+          "query": "MATCH p = (:GraphRagEntity)-[:REL]->(:GraphRagEntity) RETURN p",
+          "x": 0,
+          "y": 7,
+          "width": 16,
+          "height": 6,
+          "type": "graph",
+          "selection": {},
+          "settings": {}
+        },
+        {
+          "id": "knowledge-graph-d10",
+          "title": "Most connected entities",
+          "query": "MATCH (e:GraphRagEntity)\nRETURN e.name AS entity, e.type AS type, COUNT { (e)-[:REL]-() } AS relations, COUNT { (:GraphRagChunk)-[:MENTIONS]->(e) } AS chunks\nORDER BY relations DESC LIMIT 15",
+          "x": 16,
+          "y": 7,
+          "width": 8,
+          "height": 6,
+          "type": "table",
+          "selection": {},
+          "settings": {}
+        },
+        {
+          "id": "knowledge-graph-d12",
+          "title": "Entities each eval question depends on",
+          "query": "MATCH (q:EvalQuestion)-[:ABOUT]->(e:GraphRagEntity)\nRETURN q.id AS id, q.question AS question, collect(e.name) AS entities ORDER BY id",
+          "x": 0,
+          "y": 13,
+          "width": 24,
+          "height": 4,
+          "type": "table",
+          "selection": {},
+          "settings": {}
+        }
+      ]
+    },
+    {
+      "title": "Agent memory",
+      "reports": [
+        {
+          "id": "agent-memory-d13",
+          "title": "What the agent remembers (current facts)",
+          "query": "MATCH (:MemoryUser {id: 'demo-user'})-[:REMEMBERS]->(a)-[r:MEM_REL]->(b) WHERE r.valid_to IS NULL\nRETURN a, r, b",
+          "x": 0,
+          "y": 0,
+          "width": 12,
+          "height": 5,
+          "type": "graph",
+          "selection": {},
+          "settings": {}
+        },
+        {
+          "id": "agent-memory-d14",
+          "title": "Fact history incl. corrections",
+          "query": "MATCH (:MemoryUser {id: 'demo-user'})-[:REMEMBERS]->(a)-[r:MEM_REL]->(b)\nRETURN a.name AS subject, r.type AS relation, b.name AS object,\n       toString(r.ts) AS stored, toString(r.valid_to) AS forgotten,\n       CASE WHEN r.valid_to IS NULL THEN 'current' ELSE 'superseded' END AS status\nORDER BY status, stored",
+          "x": 12,
+          "y": 0,
+          "width": 12,
+          "height": 5,
+          "type": "table",
+          "selection": {},
+          "settings": {}
+        },
+        {
+          "id": "agent-memory-d15",
+          "title": "Chat history per session",
+          "query": "MATCH (:MemoryUser {id: 'demo-user'})-[:HAS_SESSION]->(s)-[:HAS_MESSAGE]->(m)\nRETURN s.id AS session, m.seq AS seq, m.role AS role, left(m.text, 160) AS text ORDER BY session, seq",
+          "x": 0,
+          "y": 5,
+          "width": 24,
+          "height": 5,
+          "type": "table",
+          "selection": {},
+          "settings": {}
+        }
+      ]
+    },
+    {
+      "title": "Document stores",
+      "reports": [
+        {
+          "id": "document-stores-d16",
+          "title": "Documents per store",
+          "query": "MATCH (d) WHERE d:HaystackDocument OR d:HaystackRagDocument OR d:GraphRagChunk\nRETURN labels(d)[0] AS store, count(d) AS documents, count(d.embedding) AS with_embedding ORDER BY store",
+          "x": 0,
+          "y": 0,
+          "width": 24,
+          "height": 3,
+          "type": "table",
+          "selection": {},
+          "settings": {}
+        },
+        {
+          "id": "document-stores-d17",
+          "title": "Vector RAG chunks (exercise 08)",
+          "query": "MATCH (d:HaystackRagDocument) RETURN d.`meta.split_id` AS split, left(d.content, 200) AS content ORDER BY split",
+          "x": 0,
+          "y": 3,
+          "width": 24,
+          "height": 5,
+          "type": "table",
+          "selection": {},
+          "settings": {}
+        }
+      ]
+    }
+  ]
+}
