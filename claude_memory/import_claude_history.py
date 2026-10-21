@@ -59,12 +59,16 @@ SECRET_PATTERNS = [
     ("slack_token", r"\bxox[abprs]-[0-9A-Za-z\-]{10,}"),
     ("aws_access_key", r"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b"),
     ("elevenlabs_key", r"\bsk_[0-9a-f]{40,}\b"),
+    ("supabase_token", r"\bsbp_[0-9a-f]{40}\b"),
     ("jwt", r"\beyJ[0-9A-Za-z_\-]{10,}\.eyJ[0-9A-Za-z_\-]{10,}\.[0-9A-Za-z_\-]{10,}"),
     ("private_key", r"-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----"),
     ("url_credentials", r"(?<=://)[^/\s:@'\"]+:[^/\s@'\"]+(?=@)"),
     # KEY=value / "password": "value" assignments with a secret-looking name: only the value (group v) is replaced
     ("assignment", r"(?i)(?:api[_-]?key|secret|token|password|passwd|pwd)[\"']?\s{0,3}[:=]\s{0,3}[\"']?"
                    r"(?P<v>(?!\[REDACTED)(?!your-|<|\$\{?|os\.|Secret\.|None\b|null\b|true\b|false\b)[^\s\"',;)}\]]{8,})"),
+    # The same inside JSON-escaped text (tool inputs and responses are stored as JSON): \"TOKEN\": \"value\"
+    ("assignment_json", r"(?i)(?:api[_-]?key|secret|token|password|passwd|pwd)\\\"\s{0,3}:\s{0,3}\\\""
+                        r"(?P<v>(?!\[REDACTED)(?!your-|<|\$\{?)[^\s\\\"',;)}\]]{8,})"),
 ]
 COMPILED = [(name, re.compile(p)) for name, p in SECRET_PATTERNS]
 

@@ -33,4 +33,5 @@ async def main():
                 for c in res.content:
                     print(getattr(c, "text", c)[:int(os.environ.get('MAXC', '3000'))])
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())

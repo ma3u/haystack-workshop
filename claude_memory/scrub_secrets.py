@@ -21,11 +21,22 @@ redacted text around the [REDACTED:...] marker.
     uv run --script claude_memory/scrub_secrets.py --since 2026-10-18 # only events from that day on
     uv run --script claude_memory/scrub_secrets.py --apply            # write the redacted text back
 
+As a SessionEnd hook (Claude Code, Gemini CLI, any agent that runs a command at session end):
+
+    uv run --script /path/to/claude_memory/scrub_secrets.py --hook
+
+--hook returns at once and scrubs in a detached process 20 s later (after the agent's last events and MKG's
+background extraction had time to land): --apply over the last 2 days, output appended to
+~/.mkg-import/scrub.log (rules and redacted context only). It reads nothing from the hook payload.
+
 --apply only rewrites the matching properties of the matching nodes. event_id is not touched (MKG hashes the
 original hook payload once, at write time), so redacted events are not logged again.
 """
 import argparse
+import datetime as dt
 import re
+import subprocess
+import sys
 from collections import Counter
 from pathlib import Path
 
@@ -35,6 +46,9 @@ import import_claude_history as importer
 from import_claude_history import known_secret_values  # same rules as the importer
 
 MKG_ENV = Path.home() / ".config" / "meta-knowledge-graph" / ".env"
+HOOK_LOG = Path.home() / ".mkg-import" / "scrub.log"
+HOOK_DELAY_S = 20
+HOOK_WINDOW = dt.timedelta(days=2)
 TARGETS = [
     ("SessionEvent", "event_id", "timestamp",
      ["prompt", "tool_input", "tool_response", "tool_error", "last_assistant_message", "transcript"]),
@@ -61,7 +75,7 @@ def redact(text: str, known: dict[str, str], stats: Counter) -> str:
         def sub(m, name=name):
             if name == "url_credentials" and "\\n" in m.group(0):
                 return m.group(0)
-            if name == "assignment":
+            if name in ("assignment", "assignment_json"):
                 v = m.group("v")
                 value = v.split("\\")[0]
                 if len(value) < 8 or re.search(r"[*\[{`]", value):
@@ -86,7 +100,24 @@ def main() -> None:
     p.add_argument("--apply", action="store_true", help="write the redacted text back (default: dry run)")
     p.add_argument("--since", help="only nodes with a timestamp at or after this date/time, e.g. 2026-10-18")
     p.add_argument("--verbose", action="store_true", help="one line per node instead of one per group")
+    p.add_argument("--hook", action="store_true", help="SessionEnd hook: detach, then --apply over the last 2 days")
+    p.add_argument("--delay", type=float, default=0, help=argparse.SUPPRESS)
     args = p.parse_args()
+
+    if args.hook:
+        # Never block the agent: hand the work to a detached child and return. stdin (hook payload) is not read.
+        since = (dt.datetime.now(dt.timezone.utc) - HOOK_WINDOW).isoformat()
+        HOOK_LOG.parent.mkdir(exist_ok=True)
+        log = HOOK_LOG.open("a")
+        log.write(f"\n=== {dt.datetime.now().isoformat(timespec='seconds')} scrub --apply --since {since}\n")
+        log.flush()
+        subprocess.Popen([sys.executable, __file__, "--apply", "--since", since, "--delay", str(HOOK_DELAY_S)],
+                         stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
+        return
+    if args.delay:
+        import time
+
+        time.sleep(args.delay)
 
     env = {k: v.strip().strip("\"'") for k, v in re.findall(r"^([A-Z0-9_]+)=(.*)$", MKG_ENV.read_text(), re.M)}
     db = env.get("NEO4J_DATABASE", "neo4j")

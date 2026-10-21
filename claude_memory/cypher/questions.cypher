@@ -139,7 +139,8 @@ ORDER BY o.started_at LIMIT 15;
 
 // Q13: Audit: which prompts did I type per session? (noise excluded, machine-written prompts marked)
 // Same rules as prompt_audit.py, which compares this with the raw transcripts. Noise is what Claude Code injects
-// as a prompt: background-task notifications, ! shell input, system reminders, compaction summaries.
+// as a prompt: background-task notifications, ! shell input, system reminders, compaction summaries,
+// slash commands (<command-name>) and side-session reports (<side-sessions-event>).
 // Machine-written: headless runs and the brief a session hands to a session it starts.
 MATCH (p:Project {id: 'haystack-workshop'})
 MATCH (s:Session)-[:HAS_EVENT]->(seen:SessionEvent)
@@ -151,11 +152,13 @@ WITH s, e, trim(e.prompt) AS t
 WITH s, e, CASE WHEN t STARTS WITH '<system-reminder>' THEN trim(last(split(t, '</system-reminder>'))) ELSE t END AS t
 WITH s, e, t, CASE
   WHEN t = '' OR any(x IN ['<task-notification>', '<bash-input>', '<bash-stdout>', '<bash-stderr>', '<system-reminder>',
-                           '<agent-message', '<local-command-stdout>', '[Request interrupted',
+                           '<agent-message', '<local-command-stdout>', '<command-name>', '<side-sessions-event',
+                           '[Request interrupted',
                            'This session is being continued from a previous conversation'] WHERE t STARTS WITH x)
     THEN 'noise'
   WHEN t =~ '(?s)(Task|Background) \\(from the session that started this one\\).*'
     OR t STARTS WITH 'Answer ONLY from the meta-knowledge-graph MCP tool' OR t STARTS WITH 'Without using any tools:'
+    OR s.session_id STARTS WITH 'adapter-'  // cross-agent adapter tests (gemini_cli / copilot_cli)
     THEN 'machine'
   ELSE 'developer' END AS kind
 WITH s, e, t, kind ORDER BY e.timestamp
@@ -163,5 +166,51 @@ WITH s, min(e.timestamp) AS first, count(CASE WHEN kind = 'developer' THEN 1 END
      count(CASE WHEN kind = 'machine' THEN 1 END) AS machine, count(CASE WHEN kind = 'noise' THEN 1 END) AS noise,
      [x IN collect({k: kind, t: t}) WHERE x.k <> 'noise' |
       CASE WHEN x.k = 'machine' THEN '[machine] ' ELSE '' END + left(replace(x.t, '\n', ' '), 50)] AS prompts
-RETURN left(s.session_id, 8) AS session, toString(date(first)) AS day, developer, machine, noise, prompts
+RETURN CASE WHEN s.session_id =~ '[0-9a-f]{8}-.*' THEN left(s.session_id, 8) ELSE s.session_id END AS session, toString(date(first)) AS day, developer, machine, noise, prompts
 ORDER BY first;
+
+// Q14: Evidence chain of human interaction: one row per prompt, oldest first.
+// Chain: (:User)-[:HAS_SESSION]->(:Session)-[:HAS_EVENT]->(:SessionEvent {UserPromptSubmit}) -> the tool calls the
+// agent ran until the next prompt (PostToolUse / PostToolUseFailure events in that window) -> what the session
+// produced (:Learning / :Observation)-[:FROM_SESSION]->(:Session). Same classification as Q13; noise is dropped.
+// The graph proves which client submitted which text, when, under which user id. It cannot prove a person typed
+// it: that rests on the client (interactive Claude Code vs. headless/scripted) and on the machine rules below.
+MATCH (p:Project {id: 'haystack-workshop'})
+MATCH (s:Session)-[:HAS_EVENT]->(seen:SessionEvent)
+WHERE coalesce(s.agent_kind, 'main') = 'main' AND seen.cwd STARTS WITH p.repo_root
+WITH DISTINCT s
+MATCH (s)-[:HAS_EVENT]->(e:SessionEvent {event_name: 'UserPromptSubmit'})
+WITH s, e, trim(e.prompt) AS t
+WITH s, e, CASE WHEN t STARTS WITH '<system-reminder>' THEN trim(last(split(t, '</system-reminder>'))) ELSE t END AS t
+WITH s, e, t, CASE
+  WHEN t = '' OR any(x IN ['<task-notification>', '<bash-input>', '<bash-stdout>', '<bash-stderr>', '<system-reminder>',
+                           '<agent-message', '<local-command-stdout>', '<command-name>', '<side-sessions-event',
+                           '[Request interrupted',
+                           'This session is being continued from a previous conversation'] WHERE t STARTS WITH x)
+    THEN 'noise'
+  WHEN t =~ '(?s)(Task|Background) \\(from the session that started this one\\).*'
+    OR t STARTS WITH 'Answer ONLY from the meta-knowledge-graph MCP tool' OR t STARTS WITH 'Without using any tools:'
+    OR s.session_id STARTS WITH 'adapter-'  // cross-agent adapter tests (gemini_cli / copilot_cli)
+    THEN 'machine'
+  ELSE 'developer' END AS kind
+WHERE kind <> 'noise'
+WITH s, e, t, kind ORDER BY e.timestamp
+WITH s, collect({e: e, t: t, kind: kind}) AS ps
+UNWIND range(0, size(ps) - 1) AS i
+WITH s, ps[i] AS x, CASE WHEN i + 1 < size(ps) THEN ps[i + 1].e.timestamp END AS next_ts
+WITH s, x.e AS e, x.t AS t, x.kind AS kind, next_ts
+OPTIONAL MATCH (s)-[:HAS_EVENT]->(tc:SessionEvent)
+WHERE tc.event_name IN ['PostToolUse', 'PostToolUseFailure'] AND tc.timestamp >= e.timestamp
+  AND (next_ts IS NULL OR tc.timestamp < next_ts)
+WITH s, e, t, kind, count(tc) AS tool_calls,
+     count(CASE WHEN tc.event_name = 'PostToolUseFailure' OR tc.tool_error IS NOT NULL THEN 1 END) AS failed,
+     [n IN collect(DISTINCT tc.tool_name) WHERE n IS NOT NULL][0..4] AS tools
+OPTIONAL MATCH (u:User)-[:HAS_SESSION]->(s)
+CALL (s) {
+  OPTIONAL MATCH (l:Learning)-[:FROM_SESSION]->(s)
+  RETURN count(l) AS learnings, count(CASE WHEN l.status = 'approved' THEN 1 END) AS approved
+}
+RETURN toString(e.timestamp) AS ts, kind, e.client AS client, coalesce(u.id, e.user_id) AS user,
+       CASE WHEN s.session_id =~ '[0-9a-f]{8}-.*' THEN left(s.session_id, 8) ELSE s.session_id END AS session, right(e.event_id, 16) AS event, left(replace(t, '\n', ' '), 90) AS prompt,
+       tool_calls, failed, tools, learnings AS session_learnings, approved AS session_approved
+ORDER BY ts;

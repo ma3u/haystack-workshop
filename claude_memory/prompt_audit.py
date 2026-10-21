@@ -10,7 +10,7 @@ events in the graph, per session. Read-only on both sides.
 
 Each prompt is classified with the same rules as the "Audit" query in cypher/questions.cypher:
   noise      injected by Claude Code, not typed: <task-notification>, <bash-input>/<bash-stdout>,
-             <system-reminder>, <agent-message>, compaction summaries, "[Request interrupted"
+             <system-reminder>, <agent-message>, <command-name>, <side-sessions-event>, compaction summaries, "[Request interrupted"
   machine    written by a program or another session: headless runs, "Task/Background (from the session
              that started this one)"
   developer  everything else, including queued prompts typed while the agent was working
@@ -36,7 +36,7 @@ DEFAULT_DIR = HOME / ".claude" / "projects" / "-Users-ma3u-projects-haystack-wor
 INJECTED = re.compile(
     r"<(system-reminder|local-command-stdout|local-command-caveat|command-message|command-args)>[\s\S]*?</\1>")
 NOISE = re.compile(r"^(<task-notification>|<bash-input>|<bash-stdout>|<bash-stderr>|<system-reminder>|"
-                   r"<agent-message|<local-command-stdout>|\[Request interrupted|"
+                   r"<agent-message|<local-command-stdout>|<command-name>|<side-sessions-event|\[Request interrupted|"
                    r"This session is being continued from a previous conversation)")
 MACHINE = re.compile(r"^(Task|Background) \(from the session that started this one\)|"
                      r"^Answer ONLY from the meta-knowledge-graph MCP tool|^Without using any tools:")

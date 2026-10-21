@@ -8,25 +8,90 @@ and why Haystack is a good host for GraphRAG.
 
 **Vector RAG** (exercise 08): retrieve passages that *look like* the question.
 
-```
-question ─► embed ─► Neo4j vector index (top 10) ─► cross-encoder rerank (top 4) ─► prompt ─► LLM
+```mermaid
+flowchart LR
+    H1["1. Input"] --> Q(["Question"])
+    Q --> H2["2. Vector Retrieval & Reranking"]
+    H2 --> E["TextEmbedder"] --> V[("Neo4j Vector Index")] --> R["Cross-Encoder Rerank"]
+    R --> H3["3. LLM Generation"] --> P["ChatPromptBuilder"] --> L{{"LLM"}}
+
+    style H1 fill:#4c1d95,stroke:#a78bfa,color:#ffffff,stroke-width:3px
+    style Q fill:#8b5cf6,stroke:#5b21b6,color:#ffffff,stroke-width:2px
+
+    style H2 fill:#065f46,stroke:#34d399,color:#ffffff,stroke-width:3px
+    style E fill:#10b981,stroke:#047857,color:#ffffff,stroke-width:2px
+    style R fill:#10b981,stroke:#047857,color:#ffffff,stroke-width:2px
+
+    style V fill:#0ea5e9,stroke:#0369a1,color:#ffffff,stroke-width:2px
+
+    style H3 fill:#9f1239,stroke:#fb7185,color:#ffffff,stroke-width:3px
+    style P fill:#f43f5e,stroke:#be123c,color:#ffffff,stroke-width:2px
+    style L fill:#f43f5e,stroke:#be123c,color:#ffffff,stroke-width:2px
 ```
 
 **GraphRAG** (exercise 09): same seeds, plus *facts connected to* the question.
 
-```
-indexing:  passage ─► LLM extracts (entity)-[RELATION]->(entity) ─► Neo4j graph
-                                                                     (:GraphRagChunk)-[:MENTIONS]->(:GraphRagEntity)
-                                                                     (:GraphRagEntity)-[:REL {type}]->(:GraphRagEntity)
+```mermaid
+flowchart TB
+    H1["1. GraphRAG Indexing Pipeline"]
+    DOC(["Passage / Prompt"])
+    EXT["LLMGraphExtractor"]
+    GW["Neo4jGraphWriter"]
+    KG[("Neo4j Vector + Entity Graph")]
+    H1 --> DOC --> EXT --> GW --> KG
 
-query:     question ─► embed ─► vector index ─► rerank ─┐
-                                                        ├─► Neo4jGraphRetriever ─► prompt (passages + facts) ─► LLM
-           question ─► entity linking ──────────────────┘     (≤3 hops, hubs pruned, ≤50 facts)
+    H2["2. Hybrid Vector + Entity Seed Retrieval"]
+    Q2(["Question"])
+    EMB["TextEmbedder"]
+    VEC[("Neo4j Vector Index")]
+    RNK["Cross-Encoder Rerank"]
+    EL["Entity Linking"]
+    H2 --> Q2
+    Q2 --> EMB --> VEC --> RNK
+    Q2 --> EL
+
+    H3["3. Multi-Hop Graph Traversal (<=3 Hops)"]
+    GR["Neo4jGraphRetriever"]
+    KG --> H3
+    RNK & EL --> H3 --> GR
+
+    H4["4. Grounded Prompt & LLM Synthesis"]
+    PRM["Prompt (Passages + Facts)"]
+    LLM2{{"LLM"}}
+    GR --> H4 --> PRM --> LLM2
+
+    style H1 fill:#b45309,stroke:#fbbf24,color:#ffffff,stroke-width:3px
+    style DOC fill:#8b5cf6,stroke:#5b21b6,color:#ffffff,stroke-width:2px
+    style EXT fill:#f59e0b,stroke:#b45309,color:#ffffff,stroke-width:2px
+    style GW fill:#f59e0b,stroke:#b45309,color:#ffffff,stroke-width:2px
+
+    style H2 fill:#065f46,stroke:#34d399,color:#ffffff,stroke-width:3px
+    style Q2 fill:#8b5cf6,stroke:#5b21b6,color:#ffffff,stroke-width:2px
+    style EMB fill:#10b981,stroke:#047857,color:#ffffff,stroke-width:2px
+    style RNK fill:#10b981,stroke:#047857,color:#ffffff,stroke-width:2px
+    style EL fill:#f59e0b,stroke:#b45309,color:#ffffff,stroke-width:2px
+
+    style VEC fill:#0ea5e9,stroke:#0369a1,color:#ffffff,stroke-width:2px
+    style KG fill:#0ea5e9,stroke:#0369a1,color:#ffffff,stroke-width:2px
+
+    style H3 fill:#075985,stroke:#38bdf8,color:#ffffff,stroke-width:3px
+    style GR fill:#f59e0b,stroke:#b45309,color:#ffffff,stroke-width:2px
+
+    style H4 fill:#9f1239,stroke:#fb7185,color:#ffffff,stroke-width:3px
+    style PRM fill:#f43f5e,stroke:#be123c,color:#ffffff,stroke-width:2px
+    style LLM2 fill:#f43f5e,stroke:#be123c,color:#ffffff,stroke-width:2px
 ```
 
 The only difference between the two query pipelines is one extra component
 (`Neo4jGraphRetriever`) between the ranker and the prompt. Same corpus, embedding model,
 reranker, prompt template and LLM.
+
+### Diagram Explanation: Component Groups & Execution Order
+- **Inputs**: Passages/prompts ingested during indexing (`Passage`) and user queries at runtime (`Question`).
+- **Vector Seed & Reranking**: `TextEmbedder` and `Cross-Encoder Rerank (top 4)` compute query vectors and rerank the top candidate passages.
+- **Graph Extraction & Multi-Hop Traversal**: At **Indexing time**, `LLMGraphExtractor` + `Neo4jGraphWriter` extract `(Entity)-[REL]->(Entity)` triples from every passage/prompt. At **Query time**, `Entity Linking` + `Neo4jGraphRetriever` traverse up to 3 hops (`<=3 hops`, hubs pruned, `<=50` facts) from the vector seed chunks.
+- **Neo4j Vector + Knowledge Graph**: Stores both the HNSW vector index (`(:GraphRagChunk)`) and the entity-relationship graph (`(:GraphRagEntity)-[:REL]->(:GraphRagEntity)`) in Neo4j / Neo4j Aura.
+- **Synthesis & LLM Generation**: `Prompt (Passages + Facts)` merges the reranked passages with multi-hop graph facts and passes them to the `LLM`.
 
 ## 2. Why vector RAG fails on multi-hop questions
 

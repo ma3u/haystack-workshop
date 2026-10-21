@@ -16,7 +16,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
-from haystack import Document, component, logging
+from haystack import Document, component, default_from_dict, default_to_dict, logging
 from haystack.dataclasses import ChatMessage
 
 from llm import chat_generator
@@ -57,6 +57,13 @@ class LLMGraphExtractor:
         # max_retries: the OpenAI client backs off on 429 rate limits when we fan out calls.
         self._llm = chat_generator(max_retries=10, generation_kwargs={"response_format": {"type": "json_object"}})
 
+    def to_dict(self) -> dict[str, Any]:
+        return default_to_dict(self, max_workers=self.max_workers)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "LLMGraphExtractor":
+        return default_from_dict(cls, data)
+
     @component.output_types(extractions=list[dict])
     def run(self, documents: list[Document]) -> dict[str, list[dict]]:
         with ThreadPoolExecutor(self.max_workers) as pool:
@@ -84,6 +91,17 @@ class Neo4jGraphWriter:
             f"CREATE CONSTRAINT {ENTITY_LABEL.lower()}_key IF NOT EXISTS "
             f"FOR (e:{ENTITY_LABEL}) REQUIRE e.key IS UNIQUE"
         )
+
+    def to_dict(self) -> dict[str, Any]:
+        return default_to_dict(self, document_store=self.store.to_dict())
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Neo4jGraphWriter":
+        data = dict(data, init_parameters=dict(data["init_parameters"]))
+        data["init_parameters"]["document_store"] = Neo4jDocumentStore.from_dict(
+            data["init_parameters"]["document_store"]
+        )
+        return default_from_dict(cls, data)
 
     @component.output_types(entities_written=int, relations_written=int)
     def run(self, extractions: list[dict]) -> dict[str, int]:
@@ -148,6 +166,23 @@ class Neo4jGraphRetriever:
         self.max_hops = max_hops
         self.max_facts = max_facts
         self.hub_degree = hub_degree
+
+    def to_dict(self) -> dict[str, Any]:
+        return default_to_dict(
+            self,
+            document_store=self.store.to_dict(),
+            max_hops=self.max_hops,
+            max_facts=self.max_facts,
+            hub_degree=self.hub_degree,
+        )
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Neo4jGraphRetriever":
+        data = dict(data, init_parameters=dict(data["init_parameters"]))
+        data["init_parameters"]["document_store"] = Neo4jDocumentStore.from_dict(
+            data["init_parameters"]["document_store"]
+        )
+        return default_from_dict(cls, data)
 
     @component.output_types(documents=list[Document], facts=list[str], entities=list[str])
     def run(self, query: str, documents: list[Document]) -> dict[str, Any]:

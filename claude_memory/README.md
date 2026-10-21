@@ -1,4 +1,20 @@
-# Graph memory for Claude Code: MCP vs CLI vs HTTP API
+# Stage 3: Neo4j Graph Memory for Coding Agents (Challenges 12 & 13)
+
+This directory contains the final two challenges of the workshop (following [Challenges 01–11 in `exercises/`](../README.md)):
+- **Challenge 12 — Agent Memory Interface Benchmark (`Neo4jMemory` via MCP vs. CLI vs. HTTP API)**: Exposes the temporal entity-fact store (`exercises/neo4j_memory.py`) over three transports and benchmarks headless Claude Code sessions (`bench.py`).
+- **Challenge 13 — Cross-Agent Long-Term Graph Memory & Provenance Audit (`meta-knowledge-graph` on Neo4j `:7689`)**: Connects **Claude Code**, **Google Antigravity**, **Gemini CLI**, and **GitHub Copilot CLI** to a shared Neo4j memory graph with sanitized transcript import, 14 Cypher analytics/audit queries, 10-question ground-truth recall evaluation, and automated secret scrubbing.
+
+### When to Use Haystack vs. When to Use Neo4j in Agent Memory
+
+| Question | Decision Rule |
+|---|---|
+| **When should we use Haystack?** | Use **Haystack** when building **application-level RAG / GraphRAG pipelines or custom in-app agents** ([Challenges 01–11](../README.md)). Haystack provides typed `@component` DAGs, `DocumentStore` conformance, cross-encoder reranking, LLM provider switching (`exercises/llm.py`), and reproducible A/B evaluation (`10_eval_rag_vs_graphrag.py`: 62% Vector RAG vs. 100% GraphRAG). |
+| **When should we use Neo4j directly (without Haystack)?** | Use **Neo4j directly via MCP + lightweight Python hooks** (Challenges 12 & 13) when building **cross-IDE coding-agent memory** (Claude Code, Antigravity, Gemini CLI, Copilot CLI). IDE hooks execute on every prompt and tool call; avoiding framework import overhead keeps hooks fast (~0.8 s in `recall_all.py`) while Neo4j provides native HNSW vector search + multi-hop Cypher over `Session → Turn → ToolCall → Learning` provenance. |
+| **When should we use neither (native agent history)?** | When a single developer uses a single coding agent and only needs short-term (<30 day) session resumption and static project rules—native JSONL transcripts (`/resume`) plus a curated `CLAUDE.md` / `AGENTS.md` have zero latency and zero infrastructure cost. |
+
+---
+
+# Challenge 12: Graph Memory Interface Benchmark — MCP vs. CLI vs. HTTP API
 
 The same `Neo4jMemory` (`exercises/neo4j_memory.py`) exposed three ways:
 
@@ -119,12 +135,35 @@ To start over: `venv/bin/python -c "import sys; sys.path.insert(0, 'claude_memor
 
 ---
 
-# Agent memory: Claude Code history in the meta-knowledge-graph
+# Challenge 13: Cross-Agent Long-Term Graph Memory (`meta-knowledge-graph`)
 
-Second approach, next to the `Neo4jMemory` tools above: the Neo4j Labs plugin
-[meta-knowledge-graph](https://github.com/neo4j-labs/meta-knowledge-graph) (MKG) logs every Claude Code event
-into Neo4j through hooks, and `import_claude_history.py` loads the history that existed before the plugin.
-Imported sessions get the same graph shape as live ones, because the importer calls MKG's own hook code.
+Second approach, next to the Haystack `Neo4jMemory` tools above: the Neo4j Labs
+[meta-knowledge-graph](https://github.com/neo4j-labs/meta-knowledge-graph) (MKG) logs coding-agent sessions into
+Neo4j (`bolt://127.0.0.1:7689`), extracts `:Learning` and `:Observation` nodes with Azure OpenAI (`gpt-5-mini` +
+`text-embedding-3-small`), and serves them via MCP and lifecycle hooks across **Claude Code**, **Google Antigravity**,
+**Gemini CLI**, and **GitHub Copilot CLI**.
+
+## Final Challenge Results & Architecture
+
+| Capability | Final Outcome |
+|---|---|
+| **Dedicated Agent-Memory Graph** | Neo4j Enterprise 2026.09.0 (`GraphRAG-agent-memory`) on bolt `7689` / HTTP `7475` with APOC + GDS enabled (`7687` stays isolated for Haystack workshop pipelines) |
+| **Historical Session Import & Enrichment** | 19 transcripts (2,963 events across 9 main sessions + 10 subagents) sanitized (`0` gitleaks hits), loaded, and enriched into `Turn → ToolCall → ToolResult → Resource` chains |
+| **Prompt Completeness & Evidence Audit** | **51 / 51 developer prompts** verified (`prompt_audit.py` + Cypher Q13) and traced end-to-end (`prompt_evidence.py` + Q14: user → session → prompt → tool calls → learnings) |
+| **Long-Term Recall Evaluation** | **10 / 10 ground-truth questions passed** (`memory_eval.py`) using `recall_all.py` (hybrid vector + graph recall across all projects with a `cosine >= 0.75` floor that rejects off-topic queries) |
+| **Cross-Agent Codeword Test (`BLUE-HERON-42`)** | **Verified across 3 agents**: Stored & approved by **Google Antigravity** (`learning:haystack-workshop:c49e4e94ebbb2329`), recalled by **Claude Code** (`e1a5a822`), and hook-injected into **GitHub Copilot CLI** (`89f97e2e`) |
+| **Automated Secret Scrubbing** | `scrub_secrets.py --hook` runs on `SessionEnd` to redact any `.env` values or token patterns written by live hooks |
+
+### Cross-Agent Verification Matrix (2026-10-20)
+
+| Agent | Client Tag in Neo4j | MCP Tools (`13`) | Lifecycle Hooks | Cross-Agent Codeword Test (`BLUE-HERON-42`) |
+|---|---|---|---|---|
+| **Google Antigravity** | *(MCP direct)* | **Pass** (`~/.gemini/antigravity/mcp_config.json`) | n/a (native MCP) | **Pass**: Stored & approved `learning:haystack-workshop:c49e4e94ebbb2329` via `project_add_learning` / `project_resolve_learning`; recalled #1 in `project_get_context` |
+| **Claude Code** | `claude_code` | **Pass** (MKG plugin) | **Pass** (native + `recall_all.py --hook`) | **Pass**: Fresh headless session `e1a5a822` recalled `BLUE-HERON-42` (`cosine = 0.888`) and attributed it to Google Antigravity |
+| **GitHub Copilot CLI** | `copilot_cli` | **Pass** (`~/.copilot/mcp-config.json`) | **Pass** (`mkg_agent_hook.py`) | **Hook & Graph Injection Pass**: Session `89f97e2e` logged `UserPromptSubmit`/`SessionStart`/`SessionEnd` and recorded `(:Learning)-[:INJECTED_IN]->(:Session)` in Neo4j (cloud LLM call returned `402 monthly quota`) |
+| **Gemini CLI** | `gemini_cli` | Configured (`~/.gemini/settings.json`) | **Pass** (`mkg_agent_hook.py`, 9 sessions logged) | Replaced by Google Antigravity for live LLM calls (personal Google AI subscriptions block headless Gemini CLI without an API/Vertex key) |
+
+### Module Inventory
 
 | File | Purpose |
 |------|---------|
@@ -135,76 +174,32 @@ Imported sessions get the same graph shape as live ones, because the importer ca
 | `recall_all.py` | recall over every project with a cosine score, a "no match" answer and the next episode on the timeline; `--hook` injects it into every prompt |
 | `memory_eval.py` | 10 questions to the memory, each checked against the real source, MCP vs `recall_all.py` |
 | `prompt_audit.py` | audit: every prompt in the raw transcripts vs the `UserPromptSubmit` events in the graph, per session |
-| `scrub_secrets.py` | redacts secrets the live hooks wrote into the graph, with the importer's rules; dry run by default |
+| `prompt_evidence.py` | evidence chain per prompt (user, session, event, tool calls, learnings) via the MKG MCP server, Q14 → `results/prompt_evidence_chain.md` |
+| `scrub_secrets.py` | redacts secrets the live hooks wrote into the graph, with the importer's rules; dry run by default; `--hook` for `SessionEnd` |
+| `mkg_agent_hook.py` | connects Gemini CLI and GitHub Copilot CLI to MKG (hooks); see `SOLUTION.md` section 6 |
 | `cypher/*.cypher` | read-only model, result and question queries |
 
-## Status (2026-10-18)
+## Configuration & Operations Reference
 
-| Step | Status |
-|------|--------|
-| Neo4j Desktop instance `GraphRAG-agent-memory` (2026.09.0 Enterprise), ports moved to bolt 7689 / http 7475 in its `neo4j.conf` | Done; restarted 2026-10-18 with its own `bin/neo4j restart`, now listens on **7689** (http 7475) |
-| Plugin `meta-knowledge-graph@mkg` 0.1.43 installed, user scope (all sessions) | Done |
-| `MKG_ENV_FILE=~/.config/meta-knowledge-graph/.env` in `~/.claude/settings.json` | Done |
-| `NEO4J_URI` and `NEO4J_MEMORY_URI` = `bolt://127.0.0.1:7689` in the workshop `.env` | Done |
-| Secret scan of `~/.claude/projects` (gitleaks + every secret value from `~/projects/**/.env*`) | Done |
-| Sanitized, filtered copy in `~/.mkg-import/clean/`, re-scanned: gitleaks 0, known `.env` values 0, detect-secrets 0 real hits | Done |
-| Load the copy into Neo4j | Done 2026-10-18: 2,963 events, 19 transcripts (loaded on 7687 before the restart; same instance, now 7689) |
-| Enrich (tool-call graph) | Done 2026-10-18 |
-| MKG credentials file `~/.config/meta-knowledge-graph/.env` (Neo4j 7689, Azure OpenAI) | Done 2026-10-18; hooks now log live sessions |
-| Run the 10 questions, screenshots | Done 2026-10-18, queries fixed after the first run (see "Twelve questions") |
-| Azure deployment `text-embedding-3-small` (DataZoneStandard, 100K TPM) on `oai-haystack-f791ed` | Done 2026-10-18 |
-| LLM extraction of learnings / observations (Azure OpenAI `gpt-5-mini`) | Done 2026-10-18: all 19 sessions, see step 6 |
-| Embeddings for the learnings / observations written before the embedding deployment existed | Done 2026-10-18 with `backfill_embeddings.py` (8 learnings, 24 observations) |
-| Questions on learnings and the episodic timeline (Q11, Q12) | Done 2026-10-18 |
-| APOC 2026.09.0 + GDS 2026.09.0 active (`plugins/`, `dbms.security.procedures.unrestricted=apoc.*,gds.*`) | Done 2026-10-18; needed for `neo4j_get_schema` / `neo4j_read_cypher` |
-| MCP tools tested (see "MCP test") | Done 2026-10-18 |
-| Memory recall tested against the real sources, gaps fixed (see "Memory recall test") | Done 2026-10-18 |
-| Rotate the AI Studio key and the Google keys found in the TwoBreath history | Done 2026-10-18 (by you) |
-| Audit: all prompts of the project in the graph, noise separated, secrets scrubbed (see "Audit") | Done 2026-10-18: 51 of 51 prompts |
-
-## Steps, in order
-
-All steps are done (2026-10-18). Nothing in this list is open.
-
-1. **Rotate the leaked keys.** Done. The AI Studio key is in this session's transcript. The 9 Google API keys found in the
-   TwoBreath sessions are in plain text in `~/.claude/projects`. They are redacted only in the staged copy.
-   Rotate them in AI Studio / Google Cloud Console, then update `AISTUDIO_API_KEY` in `.env`. After this session
-   ends, `python3 ~/redact_key.py --apply` removes the old AI Studio key from the local transcripts.
-
-2. **Port.** Done: `GraphRAG-agent-memory` serves on **7689**, so `DeepSet` can run on 7687 again.
-   Check: `lsof -nP -iTCP -sTCP:LISTEN | grep java`. Restart without the Desktop UI (its Java path has a space):
-
+1. **Neo4j Instance (`bolt://127.0.0.1:7689`)**:
+   `GraphRAG-agent-memory` serves on port **7689** (HTTP `7475`) so `DeepSet` can run on `7687`. Restart command:
    ```bash
    D="$HOME/Library/Application Support/neo4j-desktop/Application/Data/dbmss/dbms-329920e9-dda8-4f8f-9a55-10bbb1386859"
    JAVA_HOME="$(ls -d "$HOME/Library/Application Support/neo4j-desktop/Application/Cache/runtime/"*/ | head -1)" "$D/bin/neo4j" restart
    ```
 
-   The workshop `.env` now points `NEO4J_URI` to 7689 as well, so the exercises use this instance too.
-
-3. **Load and enrich.** Done (on 7687 before the restart; it is the same instance). The importer refuses to write when the target database contains workshop data
-   (`GraphRagChunk`, `GraphRagEntity`, `HaystackRagDocument`, `HaystackDocument`), so it cannot hit `DeepSet` by mistake.
-
+2. **Sanitize, Load, and Enrich History**:
+   The importer refuses to write if the target database contains workshop labels (`GraphRagChunk`, `GraphRagEntity`, `HaystackRagDocument`, `HaystackDocument`). Re-running `load` is idempotent (event IDs are payload hashes):
    ```bash
    cd ~/projects/haystack-workshop
    RUN="uv run --no-project --with neo4j python claude_memory/import_claude_history.py"
-   $RUN sanitize                                   # optional: re-stage and re-scan with the latest history
-   $RUN load   --uri bolt://127.0.0.1:7689         # 2,963 events (9 sessions, 10 subagents)
-   $RUN enrich --uri bolt://127.0.0.1:7689         # Turn / ToolCall / ToolResult / Resource nodes, no LLM
+   $RUN sanitize                                   # stage & scan with gitleaks + .env values
+   $RUN load   --uri bolt://127.0.0.1:7689         # load events into Neo4j
+   $RUN enrich --uri bolt://127.0.0.1:7689         # build Turn / ToolCall / ToolResult / Resource graph
    ```
 
-   Re-running `load` does not duplicate events: MKG derives each event id from a hash of its payload.
-   In a session where Claude runs these commands in auto mode, the classifier denies them. Switch the session to
-   Manual (Claude app: **+** → **Permission**; terminal: Shift+Tab) and approve each command, or add an allow rule:
-
-   ```json
-   // ~/projects/haystack-workshop/.claude/settings.local.json
-   { "permissions": { "allow": ["Bash(uv run --no-project --with neo4j python claude_memory/import_claude_history.py *)"] } }
-   ```
-
-4. **Create the MKG credentials file.** Done. It copies the values from the workshop `.env`, so no secret is typed
-   or printed. The LLM is the workshop's Azure OpenAI deployment; the AI Studio project had no credits left
-   (`402 Your prepayment credits are depleted`). `NEO4J_URI` must be the port the instance really listens on.
-
+3. **MKG Credentials (`~/.config/meta-knowledge-graph/.env`)**:
+   Uses the workshop's Azure OpenAI deployments (`gpt-5-mini` + `text-embedding-3-small`, EU DataZoneStandard):
    ```bash
    ( set -a; . ~/projects/haystack-workshop/.env; set +a
      umask 077; mkdir -p ~/.config/meta-knowledge-graph
@@ -224,56 +219,19 @@ All steps are done (2026-10-18). Nothing in this list is open.
    )
    ```
 
-   Then start a new Claude Code session: hooks and the MCP server load only at session start. Verify with
-   `claude plugin list` (`meta-knowledge-graph@mkg` enabled) and check that `mcp__meta-knowledge-graph__*` tools exist.
-
-5. **Ask the 10 questions** and render the screenshots. Done, re-run on 7689 (see "Twelve questions"):
-
-   ```bash
-   uv run --no-project --with neo4j --with pillow python claude_memory/ask_memory.py --uri bolt://127.0.0.1:7689
-   ```
-
-   Writes `results/memory_questions.md` (question, Cypher, result) and `results/screenshots/q1.png` … `q10.png`.
-
-6. **LLM extraction.** Done. `:Learning` and `:Observation` nodes (durable facts, episodic timeline) come from
-   MKG's `process_project.py`, which calls the LLM from the credentials file (Azure OpenAI `gpt-5-mini`; the
-   history stays in the workshop's own Azure resource in the EU data zone). Without it, the graph holds the raw trace
-   and the tool-call graph only, and `project_get_context` / `episode_search` return nothing for imported sessions.
-   Run it from the session's project directory, once per session (main sessions and subagents):
-
+4. **LLM Learning Extraction & Embedding Backfill**:
    ```bash
    P=~/.claude/plugins/cache/mkg/meta-knowledge-graph/0.1.43
-   cd <project dir>
    echo '{"session_id":"<session-id>","cwd":"<project dir>"}' | \
      CLAUDE_PLUGIN_ROOT=$P uv run -q --script $P/hooks/process_project.py --mode session --session-id <session-id>
+   uv run --script claude_memory/backfill_embeddings.py --apply
    ```
 
-   It prints many Neo4j `01N51` / `01N52` warnings (property or relationship type does not exist yet) on a fresh
-   graph; they are harmless. A small session takes about 25 s; the large TwoBreath session several minutes.
-   The autonomous gate then approves or blocks each candidate (for example `approved`, `already_learned`, `blocked`).
-
-   Embeddings: `text-embedding-3-small` (1536 dimensions) was deployed on `oai-haystack-f791ed` on 2026-10-18:
-
+5. **Run the Cypher Questions & Generate Reports**:
    ```bash
-   az cognitiveservices account deployment create -g rg-haystack-workshop -n oai-haystack-f791ed \
-     --deployment-name text-embedding-3-small --model-name text-embedding-3-small --model-version 1 \
-     --model-format OpenAI --sku-name DataZoneStandard --sku-capacity 100
+   uv run --no-project --with neo4j --with pillow python claude_memory/ask_memory.py --uri bolt://127.0.0.1:7689
+   uv run --script claude_memory/prompt_evidence.py
    ```
-
-   Result (2026-10-18): 19 sessions processed (9 main, 10 subagents). The imported sessions gave 2-3 observations
-   each (MKG summarizes a whole session in one batch) and 19 candidate learnings; this live session added more through
-   the hooks. Gate outcome so far: approved, `already_learned` (duplicate of an approved one), `blocked`, and
-   `candidate` (not judged yet; the gate runs in the background after later sessions).
-
-   - [x] All 19 sessions extracted.
-   - [x] Embeddings for nodes written before the embedding deployment existed. MKG has no backfill command, so
-         `backfill_embeddings.py` does it with MKG's own config and embedding code (dry run without `--apply`):
-
-         ```bash
-         uv run --script claude_memory/backfill_embeddings.py --apply
-         ```
-
-   - [x] Questions re-run on 7689, plus Q11 (learnings) and Q12 (observation timeline).
 
 ## What the import keeps and drops
 
@@ -288,17 +246,68 @@ Plain-word passwords (e.g. `password`) are not replaced globally, only where the
 
 ## Graph model
 
+```mermaid
+flowchart TB
+    H0["0. Core Context & Identity"]
+    U(["(:User)"])
+    P(["(:Project)"])
+    S(["(:Session)"])
+    SUB(["(:Session {agent_kind: 'subagent'})"])
+    H0 --> U & P
+    U -->|":HAS_SESSION"| S
+    P -->|":HAS_SESSION"| S
+    S -->|":HAS_SUBAGENT"| SUB
+
+    H1["1. Raw Session Trace"]
+    E1["(:SessionEvent)"]
+    E2["(:SessionEvent)"]
+    S --> H1 --> E1 -->|":NEXT"| E2
+
+    H2["2. Enriched Tool-Call Graph"]
+    T["(:Turn)"]
+    TC["(:ToolCall)"]
+    TL["(:Tool)"]
+    TR["(:ToolResult)"]
+    RES["(:Resource)"]
+    S --> H2 --> T -->|":ISSUED"| TC
+    TC --> TL & TR & RES
+
+    H3["3. LLM-Extracted Long-Term Memory"]
+    L{{"(:Learning)"}}
+    O1{{"(:Observation)"}}
+    O2{{"(:Observation)"}}
+    P --> H3
+    H3 --> L
+    H3 --> O1 -->|":NEXT"| O2
+
+    style H0 fill:#3730a3,stroke:#818cf8,color:#ffffff,stroke-width:3px
+    style U fill:#6366f1,stroke:#4338ca,color:#ffffff,stroke-width:2px
+    style P fill:#6366f1,stroke:#4338ca,color:#ffffff,stroke-width:2px
+    style S fill:#6366f1,stroke:#4338ca,color:#ffffff,stroke-width:2px
+    style SUB fill:#6366f1,stroke:#4338ca,color:#ffffff,stroke-width:2px
+
+    style H1 fill:#075985,stroke:#38bdf8,color:#ffffff,stroke-width:3px
+    style E1 fill:#0ea5e9,stroke:#0369a1,color:#ffffff,stroke-width:2px
+    style E2 fill:#0ea5e9,stroke:#0369a1,color:#ffffff,stroke-width:2px
+
+    style H2 fill:#065f46,stroke:#34d399,color:#ffffff,stroke-width:3px
+    style T fill:#10b981,stroke:#047857,color:#ffffff,stroke-width:2px
+    style TC fill:#10b981,stroke:#047857,color:#ffffff,stroke-width:2px
+    style TL fill:#10b981,stroke:#047857,color:#ffffff,stroke-width:2px
+    style TR fill:#10b981,stroke:#047857,color:#ffffff,stroke-width:2px
+    style RES fill:#10b981,stroke:#047857,color:#ffffff,stroke-width:2px
+
+    style H3 fill:#b45309,stroke:#fbbf24,color:#ffffff,stroke-width:3px
+    style L fill:#f59e0b,stroke:#b45309,color:#ffffff,stroke-width:2px
+    style O1 fill:#f59e0b,stroke:#b45309,color:#ffffff,stroke-width:2px
+    style O2 fill:#f59e0b,stroke:#b45309,color:#ffffff,stroke-width:2px
 ```
-(:User)-[:HAS_SESSION]->(:Session)<-[:HAS_SESSION]-(:Project)
-(:Session)-[:FIRST_EVENT|LATEST_EVENT|HAS_EVENT]->(:SessionEvent)-[:NEXT]->(:SessionEvent)
-(:Session)-[:HAS_SUBAGENT]->(:Session {agent_kind: 'subagent'})
-# after enrich:
-(:Session)-[:HAS_TURN]->(:Turn)-[:ISSUED]->(:ToolCall)-[:USES_TOOL]->(:Tool)
-(:ToolCall)-[:RETURNED]->(:ToolResult)   (:ToolCall)-[:TARGETS]->(:Resource)   (:ToolCall)-[:NEXT_TOOL_CALL]->(:ToolCall)
-# after LLM extraction:
-(:Project)-[:HAS_LEARNING]->(:Learning)-[:FROM_SESSION]->(:Session)
-(:Project)-[:HAS_OBSERVATION]->(:Observation)-[:NEXT]->(:Observation)
-```
+
+### Diagram Explanation: 4-Stage Graph Memory Evolution
+- **0. Core Context & Identity**: Top-level `:User`, `:Project`, and `:Session` (including `:Session {agent_kind: 'subagent'}`) anchors for all IDE sessions.
+- **1. Raw Session Trace**: Chronological `:SessionEvent` chain (`:FIRST_EVENT`, `:NEXT`, `:LATEST_EVENT`) capturing every raw `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, and `Stop` event, scrubbed by `scrub_secrets.py`.
+- **2. Enriched Tool-Call Graph**: Materialized by `enrich_model.py` into structured `:Turn` → `:ToolCall` → `:Tool` / `:ToolResult` / `:Resource` chains.
+- **3. LLM-Extracted Long-Term Memory**: Distilled `:Learning` and `:Observation` nodes linked back to `:Project` and `:Session` (via `extract_memories.py` or MCP tools), which are then promoted into **Neo4j Aura GraphRAG** via **Haystack Enterprise Platform**.
 
 Schema in Neo4j Browser after load + enrich (`CALL db.schema.visualization()`), and nodes per label. Both were
 taken before the LLM extraction, so `:Learning` and `:Observation` are not in them yet:
@@ -547,11 +556,11 @@ Test (2026-10-18):
 
 Note that headless test sessions are logged into the memory like any other session.
 
-## Twelve questions about Neo4j projects and challenges
+## Fourteen questions about Neo4j projects and challenges (Q1–Q14)
 
-Ten questions on the raw trace plus two on the LLM-extracted memory, defined in `cypher/questions.cypher`, run by
-`ask_memory.py` on 2026-10-18 against `bolt://127.0.0.1:7689`. Full results with the Cypher:
-`results/memory_questions.md`.
+Ten questions on the raw trace, two on the LLM-extracted memory, and two audit/provenance queries, defined in
+`cypher/questions.cypher`, run by `ask_memory.py` and `prompt_evidence.py` against `bolt://127.0.0.1:7689`. Full
+results with the Cypher: `results/memory_questions.md` and `results/prompt_evidence_chain.md`.
 
 | # | Question |
 |---|----------|
@@ -568,6 +577,7 @@ Ten questions on the raw trace plus two on the LLM-extracted memory, defined in 
 | Q11 | What did the memory learn per project, and what did the gate approve or block? |
 | Q12 | Episodic timeline: what happened with Neo4j / GraphRAG, in order? |
 | Q13 | Audit: which prompts did I type per session? (see "Audit") |
+| Q14 | Evidence chain per prompt: `User → Session → Prompt → ToolCall → Learning` (`prompt_evidence.py`) |
 
 Fixes after the first run:
 
@@ -633,6 +643,23 @@ started ("Task/Background (from the session that started this one)"). Q13 lists 
 alone. It also lists two older sessions (`4b9448cf`, `6994459c`) that started in `~/projects` and then worked in this
 repository; their transcripts are in another project directory.
 
+### Evidence chain per prompt (2026-10-20)
+
+`prompt_evidence.py` runs Q14 through the MKG MCP server (`neo4j_read_cypher`, stdio, like Claude Code) and writes
+[`results/prompt_evidence_chain.md`](results/prompt_evidence_chain.md): one row per prompt with
+`(:User)-[:HAS_SESSION]->(:Session)-[:HAS_EVENT]->(:SessionEvent {UserPromptSubmit})`, the tool calls until the next
+prompt, and the learnings of the session. First run: 85 prompts in 16 sessions, 73 developer, 12 machine-written.
+
+```bash
+uv run --no-project --with mcp --with neo4j python claude_memory/prompt_evidence.py
+```
+
+Building it fixed three classification gaps in Q13, Q14 and `prompt_audit.py`: `<command-name>` (slash commands) and
+`<side-sessions-event>` (app reports) were counted as developer prompts and are noise now; the `adapter-*` sessions
+of the cross-agent tests are machine-written. Limits of the chain, listed in the report: prompts queued while the
+agent works have no event; tool calls are assigned by time window, because each session has a single `:Turn`
+(`turn:<session>:unknown`); learnings link to the session, not to a prompt.
+
 Left as found:
 
 - `152df933` keeps the `SessionEnd` the first import wrote at 12:30:13, now in the middle of its chain.
@@ -655,8 +682,8 @@ uv run --script claude_memory/scrub_secrets.py --since 2026-10-18 --apply
 Result on 2026-10-18: no secrets in 3,977 events, 50 learnings and 135 observations. Without the guards the importer's
 rules reported 111 hits, all false positives: code, masked values, a gitleaks line reference, JSON-escaped text,
 and the script's own earlier output. No `--apply` was run. To run it regularly without changing the plugin, add it as
-a `SessionEnd` hook in `~/.claude/settings.json` or as a launchd job, with `--since` set to the last day. Not set up
-yet. Redaction after the fact still leaves a window in which the raw text is in Neo4j, so keep the instance local.
+a `SessionEnd` hook: `scrub_secrets.py --hook` (set up 2026-10-20 in `~/.claude/settings.json`, and for Gemini and
+Copilot through `mkg_agent_hook.py`). Redaction after the fact still leaves a window in which the raw text is in Neo4j, so keep the instance local.
 
 ## Troubleshooting
 

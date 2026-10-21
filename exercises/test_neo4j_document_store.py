@@ -119,3 +119,18 @@ class TestNeo4jEmbeddingRetriever:
         store._use_search_clause = False
         fallback = retriever.run(query_embedding=q)["documents"]
         assert [(d.content, round(d.score, 5)) for d in primary] == [(d.content, round(d.score, 5)) for d in fallback]
+
+    def test_graphrag_components_serialization_roundtrip(self, store):
+        from neo4j_graph import Neo4jGraphRetriever, Neo4jGraphWriter
+
+        pipe = Pipeline()
+        pipe.add_component("writer", Neo4jGraphWriter(store))
+        pipe.add_component("graph_retriever", Neo4jGraphRetriever(store, max_hops=2, max_facts=10, hub_degree=8))
+        yaml_str = pipe.dumps()
+        restored = Pipeline.loads(yaml_str, allowed_modules=["neo4j_graph", "neo4j_document_store"])
+        try:
+            gr = restored.get_component("graph_retriever")
+            assert (gr.max_hops, gr.max_facts, gr.hub_degree) == (2, 10, 8)
+        finally:
+            restored.get_component("writer").store.close()
+            restored.get_component("graph_retriever").store.close()
